@@ -1,0 +1,54 @@
+#!/bin/sh
+
+mount -t proc proc /proc
+ROOT=
+NFSROOT=
+export init=/sbin/init
+for x in $(cat /proc/cmdline); do
+	case $x in
+		init=*)
+			init=${x#init=}
+			;;
+		root=*)
+			ROOT=${x#root=}
+			;;
+		nfsroot=*)
+			NFSROOT=${x#nfsroot=}
+			;;
+	esac
+done
+
+if [ "x${ROOT}" = "x" ]; then
+	echo abcd
+	exec /sbin/init
+fi
+
+mount -t sysfs sysfs /sys
+
+mdev -s
+
+mkdir /dev/pts
+mkdir /dev/shm
+mount -t devpts devpts /dev/pts
+mount -t tmpfs tmpfs /dev/shm
+mount -t tmpfs tmpfs /tmp
+mount -t tmpfs tmpfs /run
+
+export ROOT
+
+mkdir /rootfs
+if [ $ROOT == "/dev/nfs" ] && [ "x${NFSROOT}" != "x" ];then
+	/sbin/ifup -a
+	mount -t nfs -o nolock $NFSROOT /rootfs
+else
+	mount $ROOT /rootfs/
+fi
+
+mount -n -o move /proc /rootfs/proc
+mount -n -o move /sys /rootfs/sys
+mount -n -o move /run /rootfs/run
+mount -n -o move /tmp /rootfs/tmp
+mount -n -o move /dev/shm /rootfs/dev/shm
+mount -n -o move /dev/pts /rootfs/dev/pts
+
+exec chroot /rootfs $init 3
