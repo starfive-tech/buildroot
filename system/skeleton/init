@@ -42,6 +42,9 @@ if [ $ROOT == "/dev/nfs" ] && [ "x${NFSROOT}" != "x" ];then
 	mount -t nfs -o nolock $NFSROOT /rootfs
 else
 	mount $ROOT /rootfs/
+	if [ ! -e /rootfs/dev/console ]; then
+		/bin/mknod /rootfs/dev/console c 5 1
+	fi
 fi
 
 mount -n -o move /proc /rootfs/proc
