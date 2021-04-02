@@ -1,0 +1,35 @@
+#! /bin/sh
+
+set -e
+
+DESC="bluetooth"
+NAME=bluetoothd
+DAEMON=/usr/sbin/$NAME
+
+case "$1" in
+  start)
+	printf "Starting $DESC: "
+	start-stop-daemon -S -b -x $NAME
+	brcm_patchram_plus --enable_hci --no2bytes --tosleep 200000 --baudrate 115200 --patchram /etc/firmware/bcm4343b0.hcd /dev/ttyS2 & >/dev/null
+	#hciconfig hci0 up
+	echo "OK"
+	;;
+  stop)
+	printf "Stopping $DESC: "
+	start-stop-daemon -K -x $NAME
+	echo "OK"
+	;;
+  restart|force-reload)
+	echo "Restarting $DESC: "
+	$0 stop
+	sleep 1
+	$0 start
+	echo ""
+	;;
+  *)
+	echo "Usage: $0 {start|stop|restart|force-reload}" >&2
+	exit 1
+	;;
+esac
+
+exit 0
