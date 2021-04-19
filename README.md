@@ -1,1 +1,1 @@
-# sft-riscvpi-buildroot
+# sft-riscv-buildroot
