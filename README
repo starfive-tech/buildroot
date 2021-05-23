@@ -1,3 +1,9 @@
+##################################################
+# NOTE: BeagleV Starlight and StarFive JH7100 SoC
+# support has been merged into upstream buildroot:
+# https://github.com/buildroot/buildroot/blob/master/board/beaglev/readme.txt
+##################################################
+
 Buildroot is a simple, efficient and easy-to-use tool to generate embedded
 Linux systems through cross-compilation.
 
