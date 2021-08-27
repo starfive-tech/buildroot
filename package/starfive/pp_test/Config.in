@@ -1,0 +1,7 @@
+config BR2_PACKAGE_PP_TEST
+	bool "pp_test"
+
+	help
+	  pp test control format of src
+
+

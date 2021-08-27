@@ -2477,4 +2477,8 @@ menu "Text editors and viewers"
 	source "package/vim/Config.in"
 endmenu
 
+menu "starfive packages"
+	source "package/starfive/Config.in"
+endmenu
+
 endmenu
