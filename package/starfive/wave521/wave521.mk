@@ -24,8 +24,8 @@ define WAVE521_INSTALL_TARGET_CMDS
 	$(INSTALL) -D -m 0644 $(@D)/vdi/linux/driver/venc.ko $(TARGET_DIR)/root/wave521/venc.ko
 	$(INSTALL) -D -m 0777 $(@D)/vdi/linux/driver/load.sh $(TARGET_DIR)/root/wave521/venc_load.sh
 	$(INSTALL) -D -m 0777 $(@D)/vdi/linux/driver/unload.sh $(TARGET_DIR)/root/wave521/venc_unload.sh
-	$(INSTALL) -D -m 0644 $(WAVE521_SITE)/../firmware/chagall.bin $(TARGET_DIR)/root/wave521/chagall.bin
 	$(INSTALL) -D -m 0644 $(@D)/libsfenc.so $(TARGET_DIR)/usr/lib/libsfenc.so
+	# $(INSTALL) -D -m 0644 $(WAVE521_SITE)/../firmware/chagall.bin $(TARGET_DIR)/root/wave521/chagall.bin
 endef
 
 
