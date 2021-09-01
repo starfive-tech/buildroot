@@ -165,7 +165,7 @@ static unsigned int     n_buffers   = 0;
 struct fb_var_screeninfo g_vinfo;
 struct fb_fix_screeninfo g_finfo;
 static unsigned char *g_fb_buf = NULL;
-long g_screensize = 1920 * 1080 * 2;
+unsigned int g_screensize = 1920 * 1080 * 2;
 long g_imagesize  = 1920 * 1080 * 2;
 // global settings
 static unsigned int format= V4L2_PIX_FMT_RGB565;

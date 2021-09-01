@@ -23,9 +23,9 @@
 #include <inttypes.h>
 #include <linux/fb.h>
 
-extern struct fb_var_screeninfo vinfo;
-extern struct fb_fix_screeninfo finfo;
-extern int screensize;
+extern struct fb_var_screeninfo g_vinfo;
+extern struct fb_fix_screeninfo g_finfo;
+extern unsigned int g_screensize;
 
 int yuyv_resize(unsigned char *inBuf, unsigned char *outBuf, int imgWidth, int imgHeight)
 {
@@ -34,7 +34,7 @@ int yuyv_resize(unsigned char *inBuf, unsigned char *outBuf, int imgWidth, int i
     int YUVinpos;    /* Y U V offset */
     int width, height;
     int x_offset, y_offset;
-    unsigned char *tmp = malloc(screensize);
+    unsigned char *tmp = malloc(g_screensize);
     unsigned int start_timems;
     unsigned int end_timems;
     struct timeval ts_start, ts_end;
@@ -44,16 +44,16 @@ int yuyv_resize(unsigned char *inBuf, unsigned char *outBuf, int imgWidth, int i
 
     gettimeofday(&ts_start, NULL);
 
-    width = imgWidth > vinfo.xres ? vinfo.xres : imgWidth;
-    height = imgHeight > vinfo.yres ? vinfo.yres : imgHeight;
-    x_offset = (vinfo.xres - width) / 2;
-    y_offset = (vinfo.yres - height) / 2;
+    width = imgWidth > g_vinfo.xres ? g_vinfo.xres : imgWidth;
+    height = imgHeight > g_vinfo.yres ? g_vinfo.yres : imgHeight;
+    x_offset = (g_vinfo.xres - width) / 2;
+    y_offset = (g_vinfo.yres - height) / 2;
 
     YUVindata = inBuf;
     YUVoutdata = tmp;
 
-    if (imgWidth == vinfo.xres) {
-        YUVinpos = (y_offset * vinfo.xres + x_offset) * 2;
+    if (imgWidth == g_vinfo.xres) {
+        YUVinpos = (y_offset * g_vinfo.xres + x_offset) * 2;
         memcpy(&tmp[YUVinpos], inBuf, imgWidth * height * 2);
         memcpy(&outBuf[YUVinpos], &tmp[YUVinpos], imgWidth * height * 2);
         // memcpy(&outBuf[YUVinpos], inBuf, imgWidth * height * 2);
@@ -68,8 +68,8 @@ int yuyv_resize(unsigned char *inBuf, unsigned char *outBuf, int imgWidth, int i
     /* two bytes for one pixels */
     for(rows = 0; rows < height; rows++)
     {
-        // vinfo.xres, vinfo.yres vinfo.bits_per_pixel
-        YUVoutdata = tmp + ((rows + y_offset) * vinfo.xres + x_offset) * 2;
+        // g_vinfo.xres, g_vinfo.yres g_vinfo.bits_per_pixel
+        YUVoutdata = tmp + ((rows + y_offset) * g_vinfo.xres + x_offset) * 2;
         YUVinpos = rows * imgWidth * 2;
 
         memcpy(YUVoutdata, &YUVindata[YUVinpos], imgWidth * 2);
@@ -82,7 +82,7 @@ int yuyv_resize(unsigned char *inBuf, unsigned char *outBuf, int imgWidth, int i
 
     gettimeofday(&ts_start, NULL);
 
-    memcpy(outBuf, tmp, screensize);
+    memcpy(outBuf, tmp, g_screensize);
 
     gettimeofday(&ts_end, NULL);
     start_timems = ts_start.tv_sec * 1000 + ts_start.tv_usec/1000;
@@ -102,7 +102,7 @@ int convert_yuyv_to_nv12(unsigned char *inBuf, unsigned char *outBuf, int imgWid
     int fb_Ypos, fb_Upos, fb_Vpos;
     int width, height;
     int x_offset, y_offset;
-    unsigned char *tmp = malloc(screensize);
+    unsigned char *tmp = malloc(g_screensize);
     unsigned int start_timems;
     unsigned int end_timems;
     struct timeval ts_start, ts_end;
@@ -112,10 +112,10 @@ int convert_yuyv_to_nv12(unsigned char *inBuf, unsigned char *outBuf, int imgWid
 
     gettimeofday(&ts_start, NULL);
 
-    width = imgWidth > vinfo.xres ? vinfo.xres : imgWidth;
-    height = imgHeight > vinfo.yres ? vinfo.yres : imgHeight;
-    x_offset = (vinfo.xres - width) / 2;
-    y_offset = (vinfo.yres - height) / 2;
+    width = imgWidth > g_vinfo.xres ? g_vinfo.xres : imgWidth;
+    height = imgHeight > g_vinfo.yres ? g_vinfo.yres : imgHeight;
+    x_offset = (g_vinfo.xres - width) / 2;
+    y_offset = (g_vinfo.yres - height) / 2;
 
     YUVdata = inBuf;
     nv12data = tmp;
@@ -123,10 +123,10 @@ int convert_yuyv_to_nv12(unsigned char *inBuf, unsigned char *outBuf, int imgWid
     /* two bytes for every pixels */
     for(rows = 0; rows < height; rows++)
     {
-        // vinfo.xres, vinfo.yres vinfo.bits_per_pixel
-        fb_Ypos = ((rows + y_offset) * vinfo.xres + x_offset);
-        fb_Upos = ((rows + y_offset) / 2 * vinfo.xres / 2 + x_offset / 2) * 2;
-        fb_Upos = vinfo.xres * vinfo.yres + fb_Upos;
+        // g_vinfo.xres, g_vinfo.yres g_vinfo.bits_per_pixel
+        fb_Ypos = ((rows + y_offset) * g_vinfo.xres + x_offset);
+        fb_Upos = ((rows + y_offset) / 2 * g_vinfo.xres / 2 + x_offset / 2) * 2;
+        fb_Upos = g_vinfo.xres * g_vinfo.yres + fb_Upos;
         fb_Vpos = fb_Upos + 1;
 
         Ypos = rows * imgWidth * 2;
@@ -146,7 +146,7 @@ int convert_yuyv_to_nv12(unsigned char *inBuf, unsigned char *outBuf, int imgWid
 
     gettimeofday(&ts_start, NULL);
 
-    memcpy(outBuf, tmp, screensize);
+    memcpy(outBuf, tmp, g_screensize);
 
     gettimeofday(&ts_end, NULL);
     start_timems = ts_start.tv_sec * 1000 + ts_start.tv_usec/1000;
@@ -165,7 +165,7 @@ int convert_nv21_to_nv12(unsigned char *inBuf, unsigned char *outBuf, int imgWid
     int fb_Ypos, fb_Upos, fb_Vpos;
     int width, height;
     int x_offset, y_offset;
-    unsigned char *tmp = malloc(screensize);
+    unsigned char *tmp = malloc(g_screensize);
     unsigned int start_timems;
     unsigned int end_timems;
     struct timeval ts_start, ts_end;
@@ -175,18 +175,18 @@ int convert_nv21_to_nv12(unsigned char *inBuf, unsigned char *outBuf, int imgWid
 
     gettimeofday(&ts_start, NULL);
 
-    width = imgWidth > vinfo.xres ? vinfo.xres : imgWidth;
-    height = imgHeight > vinfo.yres ? vinfo.yres : imgHeight;
-    x_offset = (vinfo.xres - width) / 2;
-    y_offset = (vinfo.yres - height) / 2;
+    width = imgWidth > g_vinfo.xres ? g_vinfo.xres : imgWidth;
+    height = imgHeight > g_vinfo.yres ? g_vinfo.yres : imgHeight;
+    x_offset = (g_vinfo.xres - width) / 2;
+    y_offset = (g_vinfo.yres - height) / 2;
 
     nv21data = inBuf;
     nv12data = tmp;
 
-    if (imgWidth == vinfo.xres) {
-        fb_Ypos = y_offset * vinfo.xres + x_offset;
-        fb_Upos = (y_offset / 2 * vinfo.xres / 2 + x_offset / 2) * 2;
-        fb_Upos = vinfo.xres * vinfo.yres + fb_Upos;
+    if (imgWidth == g_vinfo.xres) {
+        fb_Ypos = y_offset * g_vinfo.xres + x_offset;
+        fb_Upos = (y_offset / 2 * g_vinfo.xres / 2 + x_offset / 2) * 2;
+        fb_Upos = g_vinfo.xres * g_vinfo.yres + fb_Upos;
         Upos = imgWidth * imgHeight;
         memcpy(&tmp[fb_Ypos], inBuf, imgWidth * height);
         memcpy(&tmp[fb_Upos], &inBuf[Upos], imgWidth * height / 2);
@@ -201,17 +201,17 @@ int convert_nv21_to_nv12(unsigned char *inBuf, unsigned char *outBuf, int imgWid
     /* two bytes for every pixels */
     for(rows = 0; rows < height; rows+=2)
     {
-        // vinfo.xres, vinfo.yres vinfo.bits_per_pixel
-        fb_Ypos = ((rows + y_offset) * vinfo.xres + x_offset);
-        fb_Upos = ((rows + y_offset) / 2 * vinfo.xres / 2 + x_offset / 2) * 2;
-        fb_Upos = vinfo.xres * vinfo.yres + fb_Upos;
+        // g_vinfo.xres, g_vinfo.yres g_vinfo.bits_per_pixel
+        fb_Ypos = ((rows + y_offset) * g_vinfo.xres + x_offset);
+        fb_Upos = ((rows + y_offset) / 2 * g_vinfo.xres / 2 + x_offset / 2) * 2;
+        fb_Upos = g_vinfo.xres * g_vinfo.yres + fb_Upos;
         fb_Vpos = fb_Upos + 1;
 
         Ypos = rows * imgWidth;
         Upos = imgWidth * imgHeight + Ypos / 2;
         Vpos = Upos + 1;
         memcpy(&nv12data[fb_Ypos], &nv21data[Ypos], width);
-        memcpy(&nv12data[fb_Ypos+vinfo.xres], &nv21data[Ypos+imgWidth], width);
+        memcpy(&nv12data[fb_Ypos+g_vinfo.xres], &nv21data[Ypos+imgWidth], width);
 
         if (is_nv21) {
             for (cols = 0; cols < width; cols += 2) {
@@ -229,7 +229,7 @@ int convert_nv21_to_nv12(unsigned char *inBuf, unsigned char *outBuf, int imgWid
 
     gettimeofday(&ts_start, NULL);
 
-    memcpy(outBuf, tmp, screensize);
+    memcpy(outBuf, tmp, g_screensize);
 
     gettimeofday(&ts_end, NULL);
     start_timems = ts_start.tv_sec * 1000 + ts_start.tv_usec/1000;
@@ -249,7 +249,7 @@ int convert_nv21_to_rgb(unsigned char *inBuf, unsigned char *outBuf, int imgWidt
     unsigned int i = 0;
     int width, height;
     int x_offset, y_offset;
-    unsigned char *tmp = malloc(screensize);
+    unsigned char *tmp = malloc(g_screensize);
     unsigned int start_timems;
     unsigned int end_timems;
     struct timeval ts_start, ts_end;
@@ -259,10 +259,10 @@ int convert_nv21_to_rgb(unsigned char *inBuf, unsigned char *outBuf, int imgWidt
 
     gettimeofday(&ts_start, NULL);
 
-    width = imgWidth > vinfo.xres ? vinfo.xres : imgWidth;
-    height = imgHeight > vinfo.yres ? vinfo.yres : imgHeight;
-    x_offset = (vinfo.xres - width) / 2;
-    y_offset = (vinfo.yres - height) / 2;
+    width = imgWidth > g_vinfo.xres ? g_vinfo.xres : imgWidth;
+    height = imgHeight > g_vinfo.yres ? g_vinfo.yres : imgHeight;
+    x_offset = (g_vinfo.xres - width) / 2;
+    y_offset = (g_vinfo.yres - height) / 2;
 
     YUVdata = inBuf;
     RGBdata = tmp;
@@ -270,8 +270,8 @@ int convert_nv21_to_rgb(unsigned char *inBuf, unsigned char *outBuf, int imgWidt
     /* two bytes for every pixels */
     for(rows = 0; rows < height; rows++)
     {
-        // vinfo.xres, vinfo.yres vinfo.bits_per_pixel
-        RGBdata = tmp + ((rows + y_offset) * vinfo.xres + x_offset) * vinfo.bits_per_pixel / 8;
+        // g_vinfo.xres, g_vinfo.yres g_vinfo.bits_per_pixel
+        RGBdata = tmp + ((rows + y_offset) * g_vinfo.xres + x_offset) * g_vinfo.bits_per_pixel / 8;
 
         Ypos = rows * imgWidth;
         Vpos = Upos = imgWidth * imgHeight + Ypos / 2;
@@ -296,10 +296,10 @@ int convert_nv21_to_rgb(unsigned char *inBuf, unsigned char *outBuf, int imgWidt
             b = b > 255 ? 255 : (b < 0 ? 0 : b);
 
             /* low -> high r g b */
-            if (vinfo.bits_per_pixel == 16) {   // RGB565
+            if (g_vinfo.bits_per_pixel == 16) {   // RGB565
                 *(RGBdata ++) = (((g & 0x1c) << 3) | (b >> 3));   /* g low 5bit，b high 5bit */
                 *(RGBdata ++) = ((r & 0xf8) | (g >> 5));    /* r high 5bit，g high 3bit */
-            } else if (vinfo.bits_per_pixel == 24) {   // RGB888
+            } else if (g_vinfo.bits_per_pixel == 24) {   // RGB888
                 *(RGBdata ++) = b;
                 *(RGBdata ++) = g;
                 *(RGBdata ++) = r;
@@ -331,10 +331,10 @@ int convert_nv21_to_rgb(unsigned char *inBuf, unsigned char *outBuf, int imgWidt
     gettimeofday(&ts_start, NULL);
 
 #if 1
-    memcpy(outBuf, tmp, screensize);
+    memcpy(outBuf, tmp, g_screensize);
 #else
     int *p_outBuf, *p_tmp;
-    int size = screensize/4;
+    int size = g_screensize/4;
     p_outBuf = outBuf;
     p_tmp = tmp;
 
@@ -509,10 +509,10 @@ void Rgb2NV12(const unsigned char I[], int step,
     int width, height;
     int x_offset, y_offset;
 
-    width = image_width > vinfo.xres ? vinfo.xres : image_width;
-    height = image_height > vinfo.yres ? vinfo.yres : image_height;
-    x_offset = (vinfo.xres - width) / 2;
-    y_offset = (vinfo.yres - height) / 2;
+    width = image_width > g_vinfo.xres ? g_vinfo.xres : image_width;
+    height = image_height > g_vinfo.yres ? g_vinfo.yres : image_height;
+    x_offset = (g_vinfo.xres - width) / 2;
+    y_offset = (g_vinfo.yres - height) / 2;
 
     //In each iteration: process two rows of Y plane, and one row of interleaved UV plane.
     for (y = 0; y < height; y += 2)
@@ -520,10 +520,10 @@ void Rgb2NV12(const unsigned char I[], int step,
         I0 = &I[y*image_width*step];        //Input row width is image_width*3 bytes (each pixel is R,G,B).
         I1 = &I[(y+1)*image_width*step];
 
-        Y0 = &J[(y+y_offset)*vinfo.xres+x_offset];            //Output Y row width is image_width bytes (one Y element per pixel).
-        Y1 = &J[(y+1+y_offset)*vinfo.xres+x_offset];
+        Y0 = &J[(y+y_offset)*g_vinfo.xres+x_offset];            //Output Y row width is image_width bytes (one Y element per pixel).
+        Y1 = &J[(y+1+y_offset)*g_vinfo.xres+x_offset];
 
-        UV0 = &UV[vinfo.xres*vinfo.yres+((y+y_offset)/2*vinfo.xres/2+x_offset/2)*2];    //Output UV row - width is same as Y row width.
+        UV0 = &UV[g_vinfo.xres*g_vinfo.yres+((y+y_offset)/2*g_vinfo.xres/2+x_offset/2)*2];    //Output UV row - width is same as Y row width.
 
         //Process two source rows into: Two Y destination row, and one destination interleaved U,V row.
         Rgb2NV12TwoRows(I0,
@@ -538,7 +538,7 @@ void Rgb2NV12(const unsigned char I[], int step,
 
 int convert_rgb565_to_nv12(unsigned char *inBuf, unsigned char *outBuf, int imgWidth, int imgHeight, int is_nv21)
 {
-    unsigned char *tmp = malloc(screensize);
+    unsigned char *tmp = malloc(g_screensize);
     unsigned int start_timems;
     unsigned int end_timems;
     struct timespec ts_start, ts_end;
@@ -553,7 +553,7 @@ int convert_rgb565_to_nv12(unsigned char *inBuf, unsigned char *outBuf, int imgW
 
     clock_gettime(CLOCK_MONOTONIC, &ts_start);
 
-    memcpy(outBuf, tmp, screensize);
+    memcpy(outBuf, tmp, g_screensize);
 
     clock_gettime(CLOCK_MONOTONIC, &ts_end);
     start_timems = ts_start.tv_sec * 1000 + ts_start.tv_nsec/1000000;
@@ -573,16 +573,16 @@ int convert_yuyv_to_rgb(unsigned char *inBuf, unsigned char *outBuf, int imgWidt
     unsigned int i = 0;
     int width, height;
     int x_offset, y_offset;
-    unsigned char *tmp = malloc(screensize);
+    unsigned char *tmp = malloc(g_screensize);
     unsigned int start_timems;
     unsigned int end_timems;
     struct timespec ts_start, ts_end;
     clock_gettime(CLOCK_MONOTONIC, &ts_start);
 
-    width = imgWidth > vinfo.xres ? vinfo.xres : imgWidth;
-    height = imgHeight > vinfo.yres ? vinfo.yres : imgHeight;
-    x_offset = (vinfo.xres - width) / 2;
-    y_offset = (vinfo.yres - height) / 2;
+    width = imgWidth > g_vinfo.xres ? g_vinfo.xres : imgWidth;
+    height = imgHeight > g_vinfo.yres ? g_vinfo.yres : imgHeight;
+    x_offset = (g_vinfo.xres - width) / 2;
+    y_offset = (g_vinfo.yres - height) / 2;
 
     YUVdata = inBuf;
     RGBdata = tmp;
@@ -590,8 +590,8 @@ int convert_yuyv_to_rgb(unsigned char *inBuf, unsigned char *outBuf, int imgWidt
     /* two bytes for every pixels */
     for(rows = 0; rows < height; rows++)
     {
-        // vinfo.xres, vinfo.yres vinfo.bits_per_pixel
-        RGBdata = tmp + ((rows + y_offset) * vinfo.xres + x_offset) * vinfo.bits_per_pixel / 8;
+        // g_vinfo.xres, g_vinfo.yres g_vinfo.bits_per_pixel
+        RGBdata = tmp + ((rows + y_offset) * g_vinfo.xres + x_offset) * g_vinfo.bits_per_pixel / 8;
 
         Ypos = rows * imgWidth * 2;
         Upos = Ypos + 1;
@@ -613,10 +613,10 @@ int convert_yuyv_to_rgb(unsigned char *inBuf, unsigned char *outBuf, int imgWidt
             b = b > 255 ? 255 : (b < 0 ? 0 : b);
 
             /* low -> high r g b */
-            if (vinfo.bits_per_pixel == 16) {   // RGB565
+            if (g_vinfo.bits_per_pixel == 16) {   // RGB565
                 *(RGBdata ++) = (((g & 0x1c) << 3) | (b >> 3));    /* g low 5bits，b high 5bits */
                 *(RGBdata ++) = ((r & 0xf8) | (g >> 5));    /* r high 5bits, g high 3bits */
-            } else if (vinfo.bits_per_pixel == 24) {   // RGB888
+            } else if (g_vinfo.bits_per_pixel == 24) {   // RGB888
                 *(RGBdata ++) = b;
                 *(RGBdata ++) = g;
                 *(RGBdata ++) = r;
@@ -646,7 +646,7 @@ int convert_yuyv_to_rgb(unsigned char *inBuf, unsigned char *outBuf, int imgWidt
 
     clock_gettime(CLOCK_MONOTONIC, &ts_start);
 
-    memcpy(outBuf, tmp, screensize);
+    memcpy(outBuf, tmp, g_screensize);
 
     clock_gettime(CLOCK_MONOTONIC, &ts_end);
     start_timems = ts_start.tv_sec * 1000 + ts_start.tv_nsec/1000000;
@@ -663,7 +663,7 @@ int convert_yuv444_to_rgb(unsigned char *inBuf, unsigned char *outBuf, int imgWi
     int y, u, v, r, g, b;
     unsigned char *YUVdata, *RGBdata;
     int Ypos;
-    unsigned char *tmp = malloc(screensize);
+    unsigned char *tmp = malloc(g_screensize);
 
     YUVdata = inBuf;
     RGBdata = tmp;
@@ -687,10 +687,10 @@ int convert_yuv444_to_rgb(unsigned char *inBuf, unsigned char *outBuf, int imgWi
             b = b > 255 ? 255 : (b < 0 ? 0 : b);
 
             /* low -> high r g b */
-            if (vinfo.bits_per_pixel == 16) {   // RGB565
+            if (g_vinfo.bits_per_pixel == 16) {   // RGB565
                 *(RGBdata ++) = (((g & 0x1c) << 3) | (b >> 3));    /* g low 5bits，b high 5bits */
                 *(RGBdata ++) = ((r & 0xf8) | (g >> 5));    /* r high 5bits，g high 3bits */
-            } else if (vinfo.bits_per_pixel == 24) {   // RGB888
+            } else if (g_vinfo.bits_per_pixel == 24) {   // RGB888
                 *(RGBdata ++) = b;
                 *(RGBdata ++) = g;
                 *(RGBdata ++) = r;
@@ -704,7 +704,7 @@ int convert_yuv444_to_rgb(unsigned char *inBuf, unsigned char *outBuf, int imgWi
         }
     }
 
-    memcpy(outBuf, tmp, screensize);
+    memcpy(outBuf, tmp, g_screensize);
     free(tmp);
     return 0;
 }
@@ -716,18 +716,18 @@ int convert_rgb565_to_rgb(unsigned char *inBuf, unsigned char *outBuf, int imgWi
     int RGBpos;
     int width, height;
     int x_offset, y_offset;
-    unsigned char *tmp = malloc(screensize);
+    unsigned char *tmp = malloc(g_screensize);
 
-    width = imgWidth > vinfo.xres ? vinfo.xres : imgWidth;
-    height = imgHeight > vinfo.yres ? vinfo.yres : imgHeight;
-    x_offset = (vinfo.xres - width) / 2;
-    y_offset = (vinfo.yres - height) / 2;
+    width = imgWidth > g_vinfo.xres ? g_vinfo.xres : imgWidth;
+    height = imgHeight > g_vinfo.yres ? g_vinfo.yres : imgHeight;
+    x_offset = (g_vinfo.xres - width) / 2;
+    y_offset = (g_vinfo.yres - height) / 2;
 
     RGB565data = inBuf;
     RGBdata = tmp;
 
-    if (imgWidth == vinfo.xres) {
-        RGBpos = (y_offset * vinfo.xres + x_offset) * 2;
+    if (imgWidth == g_vinfo.xres) {
+        RGBpos = (y_offset * g_vinfo.xres + x_offset) * 2;
         memcpy(&tmp[RGBpos], inBuf, imgWidth * height * 2);
         memcpy(&outBuf[RGBpos], &tmp[RGBpos], imgWidth * height * 2);
         // memcpy(&outBuf[RGBpos], inBuf, imgWidth * height * 2);
@@ -738,9 +738,9 @@ int convert_rgb565_to_rgb(unsigned char *inBuf, unsigned char *outBuf, int imgWi
     RGBpos = 0;
     for(rows = 0; rows < imgHeight; rows++)
     {
-        RGBdata = tmp + ((rows + y_offset) * vinfo.xres + x_offset) * vinfo.bits_per_pixel / 8;
+        RGBdata = tmp + ((rows + y_offset) * g_vinfo.xres + x_offset) * g_vinfo.bits_per_pixel / 8;
         RGBpos = rows * imgWidth * 2;
-        if (vinfo.bits_per_pixel == 16) {   // RGB565
+        if (g_vinfo.bits_per_pixel == 16) {   // RGB565
             memcpy(RGBdata, &RGB565data[RGBpos], imgWidth * 2);
         } else {
             for(cols = 0; cols < imgWidth; cols++)
@@ -748,7 +748,7 @@ int convert_rgb565_to_rgb(unsigned char *inBuf, unsigned char *outBuf, int imgWi
                 *(RGBdata ++) = RGB565data[RGBpos] & 0x1F;
                 *(RGBdata ++) = (RGB565data[RGBpos + 1] & 0x7) << 3 | RGB565data[RGBpos] >> 5;
                 *(RGBdata ++) = RGB565data[RGBpos + 1] >> 3;
-                if (vinfo.bits_per_pixel == 32) {   // RGB888
+                if (g_vinfo.bits_per_pixel == 32) {   // RGB888
                     *(RGBdata ++) = 0xFF;
                 }
                 RGBpos += 2;
@@ -756,7 +756,7 @@ int convert_rgb565_to_rgb(unsigned char *inBuf, unsigned char *outBuf, int imgWi
         }
     }
 
-    memcpy(outBuf, tmp, screensize);
+    memcpy(outBuf, tmp, g_screensize);
     free(tmp);
     return 0;
 }
@@ -768,13 +768,13 @@ int convert_rgb888_to_rgb(unsigned char *inBuf, unsigned char *outBuf, int imgWi
     int RGBpos;
     int width, height;
     int x_offset, y_offset;
-    unsigned char *tmp = malloc(screensize);
+    unsigned char *tmp = malloc(g_screensize);
     unsigned char r, g, b;
 
-    width = imgWidth > vinfo.xres ? vinfo.xres : imgWidth;
-    height = imgHeight > vinfo.yres ? vinfo.yres : imgHeight;
-    x_offset = (vinfo.xres - width) / 2;
-    y_offset = (vinfo.yres - height) / 2;
+    width = imgWidth > g_vinfo.xres ? g_vinfo.xres : imgWidth;
+    height = imgHeight > g_vinfo.yres ? g_vinfo.yres : imgHeight;
+    x_offset = (g_vinfo.xres - width) / 2;
+    y_offset = (g_vinfo.yres - height) / 2;
 
     RGB888data = inBuf;
     RGBdata = tmp;
@@ -782,14 +782,14 @@ int convert_rgb888_to_rgb(unsigned char *inBuf, unsigned char *outBuf, int imgWi
     RGBpos = 0;
     for(rows = 0; rows < imgHeight; rows++)
     {
-        RGBdata = tmp + ((rows + y_offset) * vinfo.xres + x_offset) * vinfo.bits_per_pixel / 8;
+        RGBdata = tmp + ((rows + y_offset) * g_vinfo.xres + x_offset) * g_vinfo.bits_per_pixel / 8;
         RGBpos = rows * imgWidth * 3;
-        if (vinfo.bits_per_pixel == 24) {   // RGB888
+        if (g_vinfo.bits_per_pixel == 24) {   // RGB888
             memcpy(RGBdata, &RGB888data[RGBpos], imgWidth * 3);
         } else {
             for(cols = 0; cols < imgWidth; cols++)
             {
-                if (vinfo.bits_per_pixel == 16) {   // RGB565
+                if (g_vinfo.bits_per_pixel == 16) {   // RGB565
                     b = RGB888data[RGBpos];
                     g = RGB888data[RGBpos + 1];
                     r = RGB888data[RGBpos + 2];
@@ -806,7 +806,7 @@ int convert_rgb888_to_rgb(unsigned char *inBuf, unsigned char *outBuf, int imgWi
         }
     }
 
-    memcpy(outBuf, tmp, screensize);
+    memcpy(outBuf, tmp, g_screensize);
     free(tmp);
     return 0;
 }
