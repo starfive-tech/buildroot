@@ -6,12 +6,25 @@ DESC="bluetooth"
 NAME=bluetoothd
 DAEMON=/usr/sbin/$NAME
 
+echo 483 > /sys/class/gpio/export
+echo out > /sys/class/gpio/gpio483/direction
+echo 0 > /sys/class/gpio/gpio483/value
+sleep 1
+echo 1 > /sys/class/gpio/gpio483/value
+
 case "$1" in
   start)
 	printf "Starting $DESC: "
 	start-stop-daemon -S -b -x $NAME
-	brcm_patchram_plus --enable_hci --no2bytes --tosleep 200000 --baudrate 115200 --patchram /etc/firmware/bcm4343b0.hcd /dev/ttyS2 & >/dev/null
+	#brcm_patchram_plus --enable_hci --no2bytes --tosleep 200000 --baudrate 115200 --patchram /etc/firmware/bcm4343b0.hcd /dev/ttyS2 & >/dev/null
 	#hciconfig hci0 up
+	if [ `dmesg | grep -c 'BCM43430/1'` -gt 0 ]; then
+	   	brcm_patchram_plus --enable_hci --no2bytes --tosleep 200000 --baudrate 115200 --patchram /etc/firmware/bcm43430a1.hcd /dev/ttyS1 &
+	fi
+
+	if [ `dmesg | grep -c 'BCM43430/2'` -gt 0 ]; then
+		brcm_patchram_plus --enable_hci --no2bytes --tosleep 200000 --baudrate 115200 --patchram /etc/firmware/bcm4343b0.hcd /dev/ttyS1 &
+	fi
 	echo "OK"
 	;;
   stop)
