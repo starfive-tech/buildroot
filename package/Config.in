@@ -2572,4 +2572,10 @@ menu "Text editors and viewers"
 	source "package/vim/Config.in"
 endmenu
 
+
+
+menu "v4l2 test"
+       source "package/v4l2_test/Config.in"
+       source "package/v4lutils/Config.in"
+endmenu
 endmenu
