@@ -1,0 +1,8 @@
+comment "ffmpeg test package"
+
+config BR2_PACKAGE_FFMPEG_TEST
+	bool "ffmpeg_test"
+	depends on BR2_PACKAGE_LIBDRM
+	depends on BR2_PACKAGE_FFMPEG
+	help
+	  Utility for ffmpeg test 
