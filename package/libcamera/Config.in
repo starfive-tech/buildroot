@@ -12,6 +12,11 @@ menuconfig BR2_PACKAGE_LIBCAMERA
 	depends on BR2_TOOLCHAIN_GCC_AT_LEAST_7 # C++17
 	depends on !BR2_STATIC_LIBS # gnutls
 	depends on BR2_USE_WCHAR # gnutls
+	depends on BR2_PACKAGE_LIBEVENT # libevent
+	depends on BR2_PACKAGE_PYTHON3
+	select BR2_PACKAGE_PYTHON_JINJA2
+	select BR2_PACKAGE_PYTHON_PLY
+	select BR2_PACKAGE_PYTHON_PYYAML
 	select BR2_PACKAGE_GNUTLS
 	select BR2_PACKAGE_LIBCAMERA_PIPELINE_UVCVIDEO if !BR2_PACKAGE_LIBCAMERA_HAS_PIPELINE
 	help
@@ -67,6 +72,13 @@ config BR2_PACKAGE_LIBCAMERA_PIPELINE_VIMC
 	select BR2_PACKAGE_LIBCAMERA_HAS_PIPELINE
 	help
 	  Pipeline for the vimc device.
+
+config BR2_PACKAGE_LIBCAMERA_PIPELINE_STARFIVE
+	bool "starfive pipeline"
+	select BR2_PACKAGE_LIBCAMERA_HAS_PIPELINE
+	select BR2_PACKAGE_YAML_CPP
+	help
+	  Pipeline for the starfive device.
 
 endif # BR2_PACKAGE_LIBCAMERA
 

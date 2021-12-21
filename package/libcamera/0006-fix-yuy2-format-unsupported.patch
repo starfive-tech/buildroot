@@ -1,0 +1,18 @@
+--- a/src/gstreamer/gstlibcamerasrc.cpp
++++ b/src/gstreamer/gstlibcamerasrc.cpp
+@@ -152,12 +152,12 @@
+ 
+ /* For the simple case, we have a src pad that is always present. */
+ GstStaticPadTemplate src_template = {
+-	"src", GST_PAD_SRC, GST_PAD_ALWAYS, TEMPLATE_CAPS_SRC
++	"src", GST_PAD_SRC, GST_PAD_ALWAYS, TEMPLATE_CAPS
+ };
+ 
+ /* More pads can be requested in state < PAUSED */
+ GstStaticPadTemplate request_src_template = {
+-	"src_%u", GST_PAD_SRC, GST_PAD_REQUEST, TEMPLATE_CAPS
++	"src_%u", GST_PAD_SRC, GST_PAD_REQUEST, TEMPLATE_CAPS_SRC
+ };
+ 
+ void
+

@@ -5,16 +5,20 @@
 ################################################################################
 
 LIBCAMERA_SITE = https://git.linuxtv.org/libcamera.git
-LIBCAMERA_VERSION = e59713c68678f3eb6b6ebe97cabdc88c7042567f
+# LIBCAMERA_VERSION = e59713c68678f3eb6b6ebe97cabdc88c7042567f
+# LIBCAMERA_VERSION = 06e53199c2563105030bda4c72752b853da7edc8
+LIBCAMERA_VERSION = d6f4abeead1e86d89dc376e8a303849bdb98d5fd
 LIBCAMERA_SITE_METHOD = git
 LIBCAMERA_DEPENDENCIES = \
 	host-openssl \
 	host-pkgconf \
 	host-python3-pyyaml \
+	host-python-jinja2 \
+	host-python-ply \
 	gnutls
 LIBCAMERA_CONF_OPTS = \
-	-Dandroid=false \
-	-Ddocumentation=false \
+	-Dandroid=disabled \
+	-Ddocumentation=disabled \
 	-Dtest=false \
 	-Dwerror=false
 LIBCAMERA_INSTALL_STAGING = YES
@@ -56,6 +60,7 @@ LIBCAMERA_PIPELINES-$(BR2_PACKAGE_LIBCAMERA_PIPELINE_RKISP1) += rkisp1
 LIBCAMERA_PIPELINES-$(BR2_PACKAGE_LIBCAMERA_PIPELINE_SIMPLE) += simple
 LIBCAMERA_PIPELINES-$(BR2_PACKAGE_LIBCAMERA_PIPELINE_UVCVIDEO) += uvcvideo
 LIBCAMERA_PIPELINES-$(BR2_PACKAGE_LIBCAMERA_PIPELINE_VIMC) += vimc
+LIBCAMERA_PIPELINES-$(BR2_PACKAGE_LIBCAMERA_PIPELINE_STARFIVE) += starfive
 
 LIBCAMERA_CONF_OPTS += -Dpipelines=$(subst $(space),$(comma),$(LIBCAMERA_PIPELINES-y))
 
@@ -81,6 +86,14 @@ endif
 
 ifeq ($(BR2_PACKAGE_HAS_UDEV),y)
 LIBCAMERA_DEPENDENCIES += udev
+endif
+
+ifeq ($(BR2_PACKAGE_LIBEVENT),y)
+LIBCAMERA_DEPENDENCIES += libevent
+endif
+
+ifeq ($(BR2_PACKAGE_LIBCAMERA_PIPELINE_STARFIVE),y)
+LIBCAMERA_DEPENDENCIES += yaml-cpp
 endif
 
 $(eval $(meson-package))
