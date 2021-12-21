@@ -51,7 +51,9 @@ void YUV420toYUV444(int width, int height, unsigned char* src, unsigned char* ds
 	}
 }
 
-void YUV420NV21toYUV444(int width, int height, unsigned char* src, unsigned char* dst) {
+void YUV420NV21toYUV444(int width, int height, unsigned char* src, unsigned char* dst,
+        int is_nv21)
+{
 	int line, column;
 	unsigned char *py, *pu, *pv;
 	unsigned char *tmp = dst;
@@ -64,10 +66,14 @@ void YUV420NV21toYUV444(int width, int height, unsigned char* src, unsigned char
 
 	for (line = 0; line < height; ++line) {
 		for (column = 0; column < width; ++column) {
-			py = base_py+(line*width)+column;
-			pu = base_pu+((line/2*width/2)+column/2)*2+1;
-			pv = base_pv+((line/2*width/2)+column/2)*2;
-
+			py = base_py + (line * width) + column;
+            if (is_nv21) {
+                pu = base_pu + ((line / 2 * width / 2) + column / 2) * 2 + 1;
+                pv = base_pv + ((line / 2 * width / 2) + column / 2) * 2;
+            } else {
+                pu = base_pu + ((line / 2 * width / 2) + column / 2) * 2;
+                pv = base_pv + ((line / 2 * width / 2) + column / 2) * 2 + 1;
+            }
 			*tmp++ = *py;
 			*tmp++ = *pu;
 			*tmp++ = *pv;
