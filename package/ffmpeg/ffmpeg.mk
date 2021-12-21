@@ -276,6 +276,10 @@ ifeq ($(BR2_PACKAGE_RPI_USERLAND),y)
 FFMPEG_CONF_OPTS += --enable-mmal --enable-omx --enable-omx-rpi \
 	--extra-cflags=-I$(STAGING_DIR)/usr/include/IL
 FFMPEG_DEPENDENCIES += rpi-userland
+else ifeq ($(BR2_PACKAGE_SF_OMX_IL),y)
+FFMPEG_CONF_OPTS += --disable-mmal --enable-omx --disable-omx-rpi \
+	--extra-cflags=-I$(STAGING_DIR)/usr/include/omx-il
+FFMPEG_DEPENDENCIES += sf-omx-il
 else
 FFMPEG_CONF_OPTS += --disable-mmal --disable-omx --disable-omx-rpi
 endif
