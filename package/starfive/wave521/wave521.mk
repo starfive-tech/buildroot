@@ -10,10 +10,10 @@ WAVE521_SITE_METHOD=local
 WAVE521_INSTALL_STAGING = YES
 
 export KERNELDIR=$(TOPDIR)/../work/linux
-	
+
 define WAVE521_BUILD_CMDS
-	$(TARGET_MAKE_ENV) $(MAKE) -C $(@D) -f $(@D)/WaveEncDriver_buildroot.mak
 	$(TARGET_MAKE_ENV) $(MAKE) -C $(@D) -f $(@D)/WaveEncoder_buildroot.mak
+	# $(TARGET_MAKE_ENV) $(MAKE) -C $(@D) -f $(@D)/WaveEncDriver_buildroot.mak
 endef
 
 define WAVE521_CLEAN_CMDS
@@ -21,10 +21,11 @@ define WAVE521_CLEAN_CMDS
 endef
 
 define WAVE521_INSTALL_TARGET_CMDS
-	$(INSTALL) -D -m 0644 $(@D)/vdi/linux/driver/venc.ko $(TARGET_DIR)/root/wave521/venc.ko
 	$(INSTALL) -D -m 0777 $(@D)/vdi/linux/driver/load.sh $(TARGET_DIR)/root/wave521/venc_load.sh
 	$(INSTALL) -D -m 0777 $(@D)/vdi/linux/driver/unload.sh $(TARGET_DIR)/root/wave521/venc_unload.sh
 	$(INSTALL) -D -m 0644 $(@D)/libsfenc.so $(TARGET_DIR)/usr/lib/libsfenc.so
+	$(INSTALL) -D -m 0644 $(@D)/cfg/encoder_defconfig.cfg $(TARGET_DIR)/lib/firmware/encoder_defconfig.cfg
+	# $(INSTALL) -D -m 0644 $(@D)/vdi/linux/driver/venc.ko $(TARGET_DIR)/root/wave521/venc.ko
 	# $(INSTALL) -D -m 0644 $(WAVE521_SITE)/../firmware/chagall.bin $(TARGET_DIR)/root/wave521/chagall.bin
 endef
 
@@ -70,5 +71,12 @@ define WAVE521_UNINSTALL_TARGET_CMDS
 	rm -rf $(TARGET_DIR)/root/venc_load.sh
 	rm -rf $(TARGET_DIR)/root/venc_unload.sh
 endef
+
+wave521_WORK_DIR := $(TARGET_DIR)/../build/wave521-$(WAVE521_VERSION)
+wave521driver:
+ifneq ($(wildcard $(wave521_WORK_DIR)/WaveEncDriver_buildroot.mak),)
+	$(TARGET_MAKE_ENV) $(MAKE) -C $(wave521_WORK_DIR) -f $(wave521_WORK_DIR)/WaveEncDriver_buildroot.mak
+	$(INSTALL) -D -m 0644 $(wave521_WORK_DIR)/vdi/linux/driver/venc.ko $(TARGET_DIR)/root/wave521/venc.ko
+endif
 
 $(eval $(generic-package))	

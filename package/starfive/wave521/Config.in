@@ -5,4 +5,4 @@ config BR2_PACKAGE_WAVE521
 	depends on BR2_KERNEL_HEADERS_CUSTOM_GIT
 	help
 	  wave521 package
-	  
+

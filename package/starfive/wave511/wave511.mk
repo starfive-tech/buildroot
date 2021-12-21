@@ -11,10 +11,10 @@ WAVE511_SITE_METHOD=local
 WAVE511_INSTALL_STAGING = YES
 
 export KERNELDIR=$(TOPDIR)/../work/linux
-	
+
 define WAVE511_BUILD_CMDS
-	$(TARGET_MAKE_ENV) $(MAKE) -C $(@D) -f $(@D)/WaveDecDriver_buildroot.mak
 	$(TARGET_MAKE_ENV) $(MAKE) -C $(@D) -f $(@D)/WaveDecode_buildroot.mak
+	# $(TARGET_MAKE_ENV) $(MAKE) -C $(@D) -f $(@D)/WaveDecDriver_buildroot.mak
 endef
 
 define WAVE511_CLEAN_CMDS
@@ -22,11 +22,11 @@ define WAVE511_CLEAN_CMDS
 endef
 
 define WAVE511_INSTALL_TARGET_CMDS
-	$(INSTALL) -D -m 0644 $(@D)/vdi/linux/driver/vdec.ko $(TARGET_DIR)/root/wave511/vdec.ko
 	$(INSTALL) -D -m 0777 $(@D)/vdi/linux/driver/load.sh $(TARGET_DIR)/root/wave511/vdec_load.sh
 	$(INSTALL) -D -m 0777 $(@D)/vdi/linux/driver/unload.sh $(TARGET_DIR)/root/wave511/vdec_unload.sh
 	$(INSTALL) -D -m 0644 $(@D)/libsfdec.so $(TARGET_DIR)/usr/lib/libsfdec.so
-	#$(INSTALL) -D -m 0644 $(WAVE511_SITE)/../firmware/chagall.bin $(TARGET_DIR)/lib/firmware/chagall.bin
+	# $(INSTALL) -D -m 0644 $(@D)/vdi/linux/driver/vdec.ko $(TARGET_DIR)/root/wave511/vdec.ko
+	# $(INSTALL) -D -m 0644 $(WAVE511_SITE)/../firmware/chagall.bin $(TARGET_DIR)/lib/firmware/chagall.bin
 endef
 
 
@@ -71,5 +71,12 @@ define WAVE511_UNINSTALL_TARGET_CMDS
 	rm -rf $(TARGET_DIR)/root/vdec_load.sh
 	rm -rf $(TARGET_DIR)/root/vdec_unload.sh
 endef
+
+wave511_WORK_DIR := $(TARGET_DIR)/../build/wave511-$(WAVE511_VERSION)
+wave511driver:
+ifneq ($(wildcard $(wave511_WORK_DIR)/WaveDecDriver_buildroot.mak),)
+	$(TARGET_MAKE_ENV) $(MAKE) -C $(wave511_WORK_DIR) -f $(wave511_WORK_DIR)/WaveDecDriver_buildroot.mak
+	$(INSTALL) -D -m 0644 $(wave511_WORK_DIR)/vdi/linux/driver/vdec.ko $(TARGET_DIR)/root/wave511/vdec.ko
+endif
 
 $(eval $(generic-package))
