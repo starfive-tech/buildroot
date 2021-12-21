@@ -1,4 +1,4 @@
-config SF_PACKAGE_GST_OMX
+config BR2_PACKAGE_SF_GST_OMX
 	bool "sf-gst-omx"
 	depends on BR2_PACKAGE_SF_OMX_IL
 	select BR2_PACKAGE_GST1_PLUGINS_BASE
