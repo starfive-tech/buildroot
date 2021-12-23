@@ -5,10 +5,10 @@ Subject: [PATCH] support use yaml file to config sensor pipeline
 
 ---
  src/libcamera/meson.build                     |   3 +
- .../pipeline/starfive/sensors_config.yaml     |  35 ++++++
+ .../pipeline/starfive/sensors_pipeline.yaml     |  35 ++++++
  src/libcamera/pipeline/starfive/starfive.cpp  | 106 ++++++++++++++++--
  3 files changed, 132 insertions(+), 12 deletions(-)
- create mode 100644 src/libcamera/pipeline/starfive/sensors_config.yaml
+ create mode 100644 src/libcamera/pipeline/starfive/sensors_pipeline.yaml
 
 diff --git a/src/libcamera/meson.build b/src/libcamera/meson.build
 index 6727a777..39c44d42 100644
@@ -31,11 +31,11 @@ index 6727a777..39c44d42 100644
  ]
  
  # We add '/' to the build_rpath as a 'safe' path to act as a boolean flag.
-diff --git a/src/libcamera/pipeline/starfive/sensors_config.yaml b/src/libcamera/pipeline/starfive/sensors_config.yaml
+diff --git a/src/libcamera/pipeline/starfive/sensors_pipeline.yaml b/src/libcamera/pipeline/starfive/sensors_pipeline.yaml
 new file mode 100644
 index 00000000..3446b0ac
 --- /dev/null
-+++ b/src/libcamera/pipeline/starfive/sensors_config.yaml
++++ b/src/libcamera/pipeline/starfive/sensors_pipeline.yaml
 @@ -0,0 +1,35 @@
 +# SPDX-License-Identifier: LGPL-2.1-or-later
 +#
@@ -97,7 +97,7 @@ index bb513387..8afe5e89 100644
 -static constexpr unsigned int MAX_STREAMS = 2;
 -static const Size OUTPUT_MIN_SIZE = { 8, 8 };
 -static const Size OUTPUT_MAX_SIZE = { 8192, 8192 };
-+#define PIPELINE_CONFIG_FILENAME "/data/sensors_pipeline.yaml"
++#define PIPELINE_CONFIG_FILENAME "/root/sensors_pipeline.yaml"
  
  namespace {
  

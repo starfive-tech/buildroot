@@ -96,4 +96,9 @@ ifeq ($(BR2_PACKAGE_LIBCAMERA_PIPELINE_STARFIVE),y)
 LIBCAMERA_DEPENDENCIES += yaml-cpp
 endif
 
+define LIBCAMERA_HOOK_EXTRA
+	$(INSTALL) -D -m 0644 $(@D)/src/libcamera/pipeline/starfive/sensors_pipeline.yaml $(TARGET_DIR)/root/sensors_pipeline.yaml
+endef
+LIBCAMERA_POST_INSTALL_TARGET_HOOKS = LIBCAMERA_HOOK_EXTRA
+
 $(eval $(meson-package))
