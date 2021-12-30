@@ -6,7 +6,7 @@
 
 
 SF_OMX_IL_VERSION:=1.0.0
-SF_OMX_IL_SITE=$(TOPDIR)/../soft_3rdpart/omx-il
+SF_OMX_IL_SITE=$(TOPDIR)/../../../soft_3rdpart/omx-il
 SF_OMX_IL_SITE_METHOD=local
 SF_OMX_IL_INSTALL_STAGING = YES
 

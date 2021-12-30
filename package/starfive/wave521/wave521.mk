@@ -5,11 +5,11 @@
 ################################################################################
 
 WAVE521_VERSION:=1.0.0
-WAVE521_SITE=$(TOPDIR)/../soft_3rdpart/wave521/code
+WAVE521_SITE=$(TOPDIR)/../../../soft_3rdpart/wave521/code
 WAVE521_SITE_METHOD=local
 WAVE521_INSTALL_STAGING = YES
 
-export KERNELDIR=$(TOPDIR)/../work/linux
+export KERNELDIR=$(TOPDIR)/../../../work/linux
 
 define WAVE521_BUILD_CMDS
 	$(TARGET_MAKE_ENV) $(MAKE) -C $(@D) -f $(@D)/WaveEncoder_buildroot.mak

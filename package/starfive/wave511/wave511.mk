@@ -6,11 +6,11 @@
 
 
 WAVE511_VERSION:=1.0.0
-WAVE511_SITE=$(TOPDIR)/../soft_3rdpart/wave511/code
+WAVE511_SITE=$(TOPDIR)/../../../soft_3rdpart/wave511/code
 WAVE511_SITE_METHOD=local
 WAVE511_INSTALL_STAGING = YES
 
-export KERNELDIR=$(TOPDIR)/../work/linux
+export KERNELDIR=$(TOPDIR)/../../../work/linux
 
 define WAVE511_BUILD_CMDS
 	$(TARGET_MAKE_ENV) $(MAKE) -C $(@D) -f $(@D)/WaveDecode_buildroot.mak
