@@ -97,7 +97,7 @@ index bb513387..8afe5e89 100644
 -static constexpr unsigned int MAX_STREAMS = 2;
 -static const Size OUTPUT_MIN_SIZE = { 8, 8 };
 -static const Size OUTPUT_MAX_SIZE = { 8192, 8192 };
-+#define PIPELINE_CONFIG_FILENAME "/root/sensors_pipeline.yaml"
++#define PIPELINE_CONFIG_FILENAME "/etc/starfive/sensors_pipeline.yaml"
  
  namespace {
  

@@ -97,7 +97,8 @@ LIBCAMERA_DEPENDENCIES += yaml-cpp
 endif
 
 define LIBCAMERA_HOOK_EXTRA
-	$(INSTALL) -D -m 0644 $(@D)/src/libcamera/pipeline/starfive/sensors_pipeline.yaml $(TARGET_DIR)/root/sensors_pipeline.yaml
+	mkdir -p $(TARGET_DIR)/etc/starfive
+	$(INSTALL) -D -m 0644 $(@D)/src/libcamera/pipeline/starfive/sensors_pipeline.yaml $(TARGET_DIR)/etc/starfive/sensors_pipeline.yaml
 endef
 LIBCAMERA_POST_INSTALL_TARGET_HOOKS = LIBCAMERA_HOOK_EXTRA
 

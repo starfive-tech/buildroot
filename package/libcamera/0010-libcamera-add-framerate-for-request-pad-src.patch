@@ -100,7 +100,7 @@ index 00000000..b2a558aa
 ++++ b/src/libcamera/pipeline/starfive/starfive.cpp	2022-01-11 10:13:31.200266219 +0800
 +@@ -44,6 +44,9 @@
 + 
-+ #define PIPELINE_CONFIG_FILENAME "/root/sensors_pipeline.yaml"
++ #define PIPELINE_CONFIG_FILENAME "/etc/starfive/sensors_pipeline.yaml"
 + 
 ++#define DEFAULT_FRAMERATE_NUM 25;
 ++#define DEFAULT_FRAMERATE_DENOM 1;
