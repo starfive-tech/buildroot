@@ -1,7 +1,7 @@
-From 0a7af884c40080461ac59cf6eda86b8d1da035fd Mon Sep 17 00:00:00 2001
+From d936cae7ba6ab3ae4665ac889bcef4c90354c36b Mon Sep 17 00:00:00 2001
 From: sw.multimedia <sw.multimedia@starfivetech.com>
 Date: Sat, 9 Oct 2021 18:09:44 +0800
-Subject: [PATCH] add starfive pipeline
+Subject: [PATCH 01/10] add starfive pipeline
 
 ---
  include/libcamera/internal/v4l2_subdevice.h  |   1 +
@@ -29,7 +29,7 @@ index 97b89fb9..fe8835bd 100644
  protected:
  	std::string logPrefix() const override;
 diff --git a/include/linux/v4l2-subdev.h b/include/linux/v4l2-subdev.h
-index a38454d9..5f127523 100644
+index a38454d9..4c9af64d 100644
 --- a/include/linux/v4l2-subdev.h
 +++ b/include/linux/v4l2-subdev.h
 @@ -206,4 +206,13 @@ struct v4l2_subdev_capability {
@@ -39,11 +39,11 @@ index a38454d9..5f127523 100644
 +#define STF_ISPFW_FILENAME_MAX_LEN  30
 +
 +struct stfisp_fw_info {
-+        char filename[STF_ISPFW_FILENAME_MAX_LEN];
++	char filename[STF_ISPFW_FILENAME_MAX_LEN];
 +};
 +
 +#define VIDIOC_STFISP_LOAD_FW \
-+        _IOW('V', BASE_VIDIOC_PRIVATE + 1, struct stfisp_fw_info)
++	_IOW('V', BASE_VIDIOC_PRIVATE + 1, struct stfisp_fw_info)
 +
  #endif
 diff --git a/meson_options.txt b/meson_options.txt
@@ -60,10 +60,10 @@ index 2c80ad8b..14baa7ef 100644
  
  option('qcam',
 diff --git a/src/gstreamer/gstlibcamera-utils.cpp b/src/gstreamer/gstlibcamera-utils.cpp
-index 0af91c1a..b40b78ae 100644
+index 3f242286..bce4960a 100644
 --- a/src/gstreamer/gstlibcamera-utils.cpp
 +++ b/src/gstreamer/gstlibcamera-utils.cpp
-@@ -126,6 +126,12 @@ gst_libcamera_stream_configuration_to_caps(const StreamConfiguration &stream_cfg
+@@ -139,6 +139,12 @@ gst_libcamera_stream_configuration_to_caps(const StreamConfiguration &stream_cfg
  			  "width", G_TYPE_INT, stream_cfg.size.width,
  			  "height", G_TYPE_INT, stream_cfg.size.height,
  			  nullptr);
@@ -76,7 +76,7 @@ index 0af91c1a..b40b78ae 100644
  	gst_caps_append_structure(caps, s);
  
  	return caps;
-@@ -217,6 +223,7 @@ gst_libcamera_resume_task(GstTask *task)
+@@ -230,6 +236,7 @@ gst_libcamera_resume_task(GstTask *task)
  	/* We only want to resume the task if it's paused. */
  	GLibLocker lock(GST_OBJECT(task));
  	if (GST_TASK_STATE(task) == GST_TASK_PAUSED) {
@@ -85,7 +85,7 @@ index 0af91c1a..b40b78ae 100644
  		GST_TASK_SIGNAL(task);
  	}
 diff --git a/src/gstreamer/gstlibcamerasrc.cpp b/src/gstreamer/gstlibcamerasrc.cpp
-index 2be44edd..fab2aa2a 100644
+index 812ba7a2..1dd0e807 100644
 --- a/src/gstreamer/gstlibcamerasrc.cpp
 +++ b/src/gstreamer/gstlibcamerasrc.cpp
 @@ -46,6 +46,7 @@ using namespace libcamera;
@@ -111,15 +111,15 @@ index 2be44edd..fab2aa2a 100644
 -		if (do_pause)
 +		if (do_pause){
 +			self->task_pause_count ++;
-+	        GST_DEBUG_OBJECT(self, "task_pause_count: %d'", self->task_pause_count);
++			GST_DEBUG_OBJECT(self, "task_pause_count: %d'", self->task_pause_count);
 +		} else {
 +			self->task_pause_count = 0;
-+	        GST_DEBUG_OBJECT(self, "reset task_pause_count ");
++			GST_DEBUG_OBJECT(self, "reset task_pause_count ");
 +		}
 +
 +		if ( self->task_pause_count > TASK_PAUSE_COUNT_MAX)
 +		{
-+	        GST_DEBUG_OBJECT(self, "gst_task_pause");
++			GST_DEBUG_OBJECT(self, "gst_task_pause");
  			gst_task_pause(self->task);
 +		}
 +
@@ -139,7 +139,7 @@ index 00000000..2f2d2a75
 +])
 diff --git a/src/libcamera/pipeline/starfive/starfive.cpp b/src/libcamera/pipeline/starfive/starfive.cpp
 new file mode 100644
-index 00000000..3517679d
+index 00000000..8797bdcb
 --- /dev/null
 +++ b/src/libcamera/pipeline/starfive/starfive.cpp
 @@ -0,0 +1,940 @@
@@ -1084,10 +1084,10 @@ index 00000000..3517679d
 +
 +} /* namespace libcamera */
 diff --git a/src/libcamera/v4l2_subdevice.cpp b/src/libcamera/v4l2_subdevice.cpp
-index 8fe5e45b..0bdcf440 100644
+index 023e2328..bc7cbfec 100644
 --- a/src/libcamera/v4l2_subdevice.cpp
 +++ b/src/libcamera/v4l2_subdevice.cpp
-@@ -524,4 +524,16 @@ std::vector<SizeRange> V4L2Subdevice::enumPadSizes(unsigned int pad,
+@@ -525,4 +525,16 @@ std::vector<SizeRange> V4L2Subdevice::enumPadSizes(unsigned int pad,
  	return sizes;
  }
  
@@ -1105,5 +1105,5 @@ index 8fe5e45b..0bdcf440 100644
 +
  } /* namespace libcamera */
 -- 
-2.17.1
+2.25.1
 

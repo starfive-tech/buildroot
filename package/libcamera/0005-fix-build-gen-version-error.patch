@@ -1,7 +1,7 @@
-From 482311f6d06fa536c113dc0896829f74b172421c Mon Sep 17 00:00:00 2001
+From 4810d94989891c7bb825ab5847b7e01e9db5e14d Mon Sep 17 00:00:00 2001
 From: sw.multimedia <sw.multimedia@starfivetech.com>
 Date: Wed, 17 Nov 2021 10:07:35 +0800
-Subject: [PATCH] fix build gen version error
+Subject: [PATCH 05/10] fix build gen version error
 
 ---
  utils/gen-version.sh | 3 +++
@@ -26,5 +26,5 @@ index eb7c7268..ef548100 100755
  echo "$version"
 +cd $workdir
 -- 
-2.17.1
+2.25.1
 

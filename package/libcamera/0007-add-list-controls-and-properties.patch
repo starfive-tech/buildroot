@@ -1,17 +1,17 @@
-From 9eb2fc23e4d453acaef7f1f45874aca381d2fefd Mon Sep 17 00:00:00 2001
+From 5e558d4454fa476cc9e0670a30d631a1174b55a2 Mon Sep 17 00:00:00 2001
 From: sw.multimedia <sw.multimedia@starfivetech.com>
 Date: Tue, 23 Nov 2021 10:44:04 +0800
-Subject: [PATCH] add list controls and properties
+Subject: [PATCH 07/10] add list controls and properties
 
 ---
  src/libcamera/pipeline/starfive/starfive.cpp | 219 ++++++++++++++-----
  1 file changed, 165 insertions(+), 54 deletions(-)
 
 diff --git a/src/libcamera/pipeline/starfive/starfive.cpp b/src/libcamera/pipeline/starfive/starfive.cpp
-index 159ead04..bb513387 100644
+index 58e1f55a..b91a85a4 100644
 --- a/src/libcamera/pipeline/starfive/starfive.cpp
 +++ b/src/libcamera/pipeline/starfive/starfive.cpp
-@@ -186,7 +186,9 @@ public:
+@@ -185,7 +185,9 @@ public:
  			delete ispSubDev_;
  	}
  
@@ -22,7 +22,7 @@ index 159ead04..bb513387 100644
  	void bufferReady(FrameBuffer *buffer);
  	bool haveRaw() const { return haveRaw_; }
  	bool rawActive() const { return rawActive_; }
-@@ -299,7 +301,7 @@ private:
+@@ -298,7 +300,7 @@ private:
  	StarFiveCameraData *data_;
  };
  
@@ -31,7 +31,7 @@ index 159ead04..bb513387 100644
  {
  	int ret;
  
-@@ -354,7 +356,38 @@ int StarFiveCameraData::init()
+@@ -353,7 +355,38 @@ int StarFiveCameraData::init()
  					&StarFiveCameraData::bufferReady);
  		}
  	}
@@ -71,7 +71,7 @@ index 159ead04..bb513387 100644
  	return 0;
  }
  
-@@ -736,97 +769,89 @@ int PipelineHandlerStarFive::processControls(StarFiveCameraData *data, const Con
+@@ -734,97 +767,89 @@ int PipelineHandlerStarFive::processControls(StarFiveCameraData *data, const Con
  
  	for (auto it : controls) {
  		unsigned int id = it.first;
@@ -211,7 +211,7 @@ index 159ead04..bb513387 100644
  	}
  
  	for (const auto &ctrl : SensorControls)
-@@ -967,7 +992,7 @@ int PipelineHandlerStarFive::registerCameras()
+@@ -965,7 +990,7 @@ int PipelineHandlerStarFive::registerCameras()
  					videoEntiryName, sensorEntityName);
  
  		/* Locate and open the capture video node. */
@@ -220,7 +220,7 @@ index 159ead04..bb513387 100644
  			continue;
  
  		/*create ipa module*/
-@@ -1077,6 +1102,92 @@ void StarFiveCameraData::bufferReady(FrameBuffer *buffer)
+@@ -1075,6 +1100,92 @@ void StarFiveCameraData::bufferReady(FrameBuffer *buffer)
  	pipe->completeRequest(request);
  }
  
@@ -314,5 +314,5 @@ index 159ead04..bb513387 100644
  
  } /* namespace libcamera */
 -- 
-2.17.1
+2.25.1
 

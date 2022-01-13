@@ -1,17 +1,17 @@
-From 62bce91263c747e42d39bcaa6a15f03458c38e70 Mon Sep 17 00:00:00 2001
+From eb7bd9dc15d8a2636d12d4e8cec219946fea353d Mon Sep 17 00:00:00 2001
 From: sw.multimedia <sw.multimedia@starfivetech.com>
 Date: Tue, 16 Nov 2021 17:23:17 +0800
-Subject: [PATCH] update toV4L2PixelFormat
+Subject: [PATCH 04/10] update toV4L2PixelFormat
 
 ---
  src/libcamera/pipeline/starfive/starfive.cpp | 18 ++++++++++++------
  1 file changed, 12 insertions(+), 6 deletions(-)
 
 diff --git a/src/libcamera/pipeline/starfive/starfive.cpp b/src/libcamera/pipeline/starfive/starfive.cpp
-index 36ef3b7b..159ead04 100644
+index bc82a062..58e1f55a 100644
 --- a/src/libcamera/pipeline/starfive/starfive.cpp
 +++ b/src/libcamera/pipeline/starfive/starfive.cpp
-@@ -441,7 +441,8 @@ CameraConfiguration::Status StarFiveCameraConfiguration::validate()
+@@ -440,7 +440,8 @@ CameraConfiguration::Status StarFiveCameraConfiguration::validate()
  				&& data_->haveRaw()) {
  			V4L2DeviceFormat format = {};
  			format.fourcc =
@@ -21,7 +21,7 @@ index 36ef3b7b..159ead04 100644
  			format.size = cfg.size;
  
  			int ret = data_->raw_->tryFormat(&format);
-@@ -455,7 +456,8 @@ CameraConfiguration::Status StarFiveCameraConfiguration::validate()
+@@ -454,7 +455,8 @@ CameraConfiguration::Status StarFiveCameraConfiguration::validate()
  		} else {
  			V4L2DeviceFormat format = {};
  			format.fourcc =
@@ -31,7 +31,7 @@ index 36ef3b7b..159ead04 100644
  			format.size = cfg.size;
  
  			int ret = data_->video_->tryFormat(&format);
-@@ -572,7 +574,8 @@ int PipelineHandlerStarFive::configure(Camera *camera, CameraConfiguration *c)
+@@ -571,7 +573,8 @@ int PipelineHandlerStarFive::configure(Camera *camera, CameraConfiguration *c)
  		if (stream == &data->rawStream_) {
  			V4L2DeviceFormat format = {};
  			format.fourcc =
@@ -41,7 +41,7 @@ index 36ef3b7b..159ead04 100644
  			format.size = cfg.size;
  
  			ret = data->raw_->setFormat(&format);
-@@ -581,13 +584,15 @@ int PipelineHandlerStarFive::configure(Camera *camera, CameraConfiguration *c)
+@@ -580,13 +583,15 @@ int PipelineHandlerStarFive::configure(Camera *camera, CameraConfiguration *c)
  
  			if (format.size != cfg.size ||
  			    format.fourcc !=
@@ -59,7 +59,7 @@ index 36ef3b7b..159ead04 100644
  			format.size = cfg.size;
  
  			ret = data->video_->setFormat(&format);
-@@ -596,7 +601,8 @@ int PipelineHandlerStarFive::configure(Camera *camera, CameraConfiguration *c)
+@@ -595,7 +600,8 @@ int PipelineHandlerStarFive::configure(Camera *camera, CameraConfiguration *c)
  
  			if (format.size != cfg.size ||
  			    format.fourcc !=
@@ -70,5 +70,5 @@ index 36ef3b7b..159ead04 100644
  		}
  
 -- 
-2.17.1
+2.25.1
 

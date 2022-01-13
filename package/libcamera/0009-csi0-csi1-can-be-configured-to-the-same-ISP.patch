@@ -1,17 +1,17 @@
-From 6d04377edf1307e3f2325db3ecfc9ff86db35233 Mon Sep 17 00:00:00 2001
+From a24624e164f041e86d9c864a4eb83ab8c2befee4 Mon Sep 17 00:00:00 2001
 From: sw.multimedia <sw.multimedia@starfivetech.com>
 Date: Thu, 16 Dec 2021 17:46:03 +0800
-Subject: [PATCH] csi0/csi1 can be configured to the same ISP
+Subject: [PATCH 09/10] csi0/csi1 can be configured to the same ISP
 
 ---
  src/libcamera/pipeline/starfive/starfive.cpp | 146 +++++++++++--------
  1 file changed, 89 insertions(+), 57 deletions(-)
 
 diff --git a/src/libcamera/pipeline/starfive/starfive.cpp b/src/libcamera/pipeline/starfive/starfive.cpp
-index 8afe5e89..c433ec0d 100644
+index 864addfa..61a2ddc6 100644
 --- a/src/libcamera/pipeline/starfive/starfive.cpp
 +++ b/src/libcamera/pipeline/starfive/starfive.cpp
-@@ -183,11 +183,11 @@ class StarFiveCameraData : public Camera::Private
+@@ -182,11 +182,11 @@ class StarFiveCameraData : public Camera::Private
  public:
  	StarFiveCameraData(PipelineHandler *pipe, MediaDevice *media,
  			std::string entityName,
@@ -25,7 +25,7 @@ index 8afe5e89..c433ec0d 100644
  		videoEntityName_ = entityName;
  		if ( videoEntityName_ == "stf_vin0_isp0_video1")
  			ispEntityName_ = "stf_isp0";
-@@ -222,10 +222,12 @@ public:
+@@ -221,10 +221,12 @@ public:
  	bool haveRaw() const { return haveRaw_; }
  	bool rawActive() const { return rawActive_; }
  	void setRawActive(bool val) { rawActive_ = val; }
@@ -38,7 +38,7 @@ index 8afe5e89..c433ec0d 100644
  
  	MediaDevice *media_;
  	V4L2VideoDevice *video_;
-@@ -241,8 +243,8 @@ private:
+@@ -240,8 +242,8 @@ private:
  	bool haveRaw_;
  	bool rawActive_;
  	std::string videoEntityName_;
@@ -48,7 +48,7 @@ index 8afe5e89..c433ec0d 100644
  	std::string getRawVideoEntityName()
  	{
  		LOG(STARFIVE, Debug) << __func__;
-@@ -253,7 +255,6 @@ private:
+@@ -252,7 +254,6 @@ private:
  		else
  			return "unknow";
  	}
@@ -56,7 +56,7 @@ index 8afe5e89..c433ec0d 100644
  };
  
  std::vector<PixelFormat> StarFiveCameraData::videoFormats() const
-@@ -335,17 +336,12 @@ int StarFiveCameraData::init(MediaDevice *media)
+@@ -334,17 +335,12 @@ int StarFiveCameraData::init(MediaDevice *media)
  	int ret;
  
  	LOG(STARFIVE, Debug) << __func__;
@@ -80,7 +80,7 @@ index 8afe5e89..c433ec0d 100644
  
  	if (ispEntityName_ != "unknow") {
  		ispSubDev_ =
-@@ -353,13 +349,6 @@ int StarFiveCameraData::init(MediaDevice *media)
+@@ -352,13 +348,6 @@ int StarFiveCameraData::init(MediaDevice *media)
  		LOG(STARFIVE, Debug) << "ispEntityName: " << ispEntityName_;
  		if (ispSubDev_->open())
  			return -ENODEV;
@@ -94,7 +94,7 @@ index 8afe5e89..c433ec0d 100644
  	}
  
  	video_ = new V4L2VideoDevice(media_->getEntityByName(videoEntityName_));
-@@ -551,10 +540,20 @@ PipelineHandlerStarFive::generateConfiguration(Camera *camera,
+@@ -550,10 +539,20 @@ PipelineHandlerStarFive::generateConfiguration(Camera *camera,
  	StarFiveCameraData *data = cameraData(camera);
  	StarFiveCameraConfiguration *config =
  		new StarFiveCameraConfiguration(data);
@@ -115,7 +115,7 @@ index 8afe5e89..c433ec0d 100644
  	for (const StreamRole role : roles) {
  		std::map<PixelFormat, std::vector<SizeRange>> streamFormats;
  		unsigned int bufferCount;
-@@ -1004,9 +1003,43 @@ int PipelineHandlerStarFive::registerCameras()
+@@ -1002,9 +1001,43 @@ int PipelineHandlerStarFive::registerCameras()
  	unsigned int numCameras = 0;
  
  	LOG(STARFIVE, Debug) << __func__;
@@ -162,7 +162,7 @@ index 8afe5e89..c433ec0d 100644
  		std::string videoEntiryName;
  		videoEntiryName = getVideoEntityNameById(id);
  		if (videoEntiryName == "unknow")
-@@ -1014,12 +1047,17 @@ int PipelineHandlerStarFive::registerCameras()
+@@ -1012,12 +1045,17 @@ int PipelineHandlerStarFive::registerCameras()
  
  		std::string sensorEntityName;
  		sensorEntityName = findSensorEntityName(videoEntiryName);
@@ -183,7 +183,7 @@ index 8afe5e89..c433ec0d 100644
  
  		/* Locate and open the capture video node. */
  		if (data->init(starFiveMediaDev_))
-@@ -1036,18 +1074,17 @@ int PipelineHandlerStarFive::registerCameras()
+@@ -1034,18 +1072,17 @@ int PipelineHandlerStarFive::registerCameras()
  		data->ipa_->init(IPASettings{ conf, data->sensor_->model() });
  
  		/* Create and register the camera. */
@@ -205,7 +205,7 @@ index 8afe5e89..c433ec0d 100644
  			registerCamera(std::move(camera));
  		}
  		numCameras++;
-@@ -1066,9 +1103,26 @@ int PipelineHandlerStarFive::enableLinks(std::vector<PipelineConfigLink> config)
+@@ -1064,9 +1101,26 @@ int PipelineHandlerStarFive::enableLinks(std::vector<PipelineConfigLink> config)
  		if (!link)
  			return -ENODEV;
  
@@ -235,7 +235,7 @@ index 8afe5e89..c433ec0d 100644
  	}
  
  	return ret;
-@@ -1138,30 +1192,8 @@ bool PipelineHandlerStarFive::match(DeviceEnumerator *enumerator)
+@@ -1136,30 +1190,8 @@ bool PipelineHandlerStarFive::match(DeviceEnumerator *enumerator)
  	if (!starFiveMediaDev_)
  		return false;
  
@@ -267,5 +267,5 @@ index 8afe5e89..c433ec0d 100644
  	if (numCameras)
  		LOG(STARFIVE, Debug)
 -- 
-2.17.1
+2.25.1
 

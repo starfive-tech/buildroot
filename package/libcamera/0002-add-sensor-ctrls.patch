@@ -1,7 +1,7 @@
-From 0dafff3d38dd2b44a0bf602fcd1c25e55cdaaec6 Mon Sep 17 00:00:00 2001
+From a3756db6257742587da7e97546aa330ad363bfd1 Mon Sep 17 00:00:00 2001
 From: sw.multimedia <sw.multimedia@starfivetech.com>
 Date: Tue, 26 Oct 2021 12:29:30 +0800
-Subject: [PATCH] add sensor ctrls
+Subject: [PATCH 02/10] add sensor ctrls
 
 ---
  src/libcamera/pipeline/starfive/starfive.cpp | 118 ++++++++++++++++---
@@ -178,5 +178,5 @@ index 8797bdcb..f63af910 100644
  		return ret;
  
 -- 
-2.17.1
+2.25.1
 

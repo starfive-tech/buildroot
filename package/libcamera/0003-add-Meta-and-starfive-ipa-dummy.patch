@@ -1,7 +1,33 @@
-diff -Naur libcamera-06e53199c2563105030bda4c72752b853da7edc8/include/libcamera/ipa/meson.build libcamera-06e53199c2563105030bda4c72752b853da7edc8_after/include/libcamera/ipa/meson.build
---- libcamera-06e53199c2563105030bda4c72752b853da7edc8/include/libcamera/ipa/meson.build	2021-09-07 07:11:15.000000000 +0800
-+++ libcamera-06e53199c2563105030bda4c72752b853da7edc8_after/include/libcamera/ipa/meson.build	2021-10-26 10:35:08.196358414 +0800
-@@ -63,6 +63,7 @@
+From 26127511bf0b6d2f016c16956d04332858bd8d7f Mon Sep 17 00:00:00 2001
+From: sw.multimedia <sw.multimedia@starfivetech.com>
+Date: Thu, 13 Jan 2022 13:52:11 +0800
+Subject: [PATCH 03/10] libcamera: 1. add caps for src templ            2. add
+ starfive ipa (dummy)
+
+---
+ include/libcamera/ipa/meson.build            |   1 +
+ include/libcamera/ipa/starfive.mojom         |  45 +++++
+ meson_options.txt                            |   2 +-
+ src/gstreamer/gstlibcamerasrc.cpp            |  11 +-
+ src/ipa/starfive/data/meson.build            |   8 +
+ src/ipa/starfive/data/starfive.conf          |   3 +
+ src/ipa/starfive/meson.build                 |  23 +++
+ src/ipa/starfive/starfive.cpp                | 200 +++++++++++++++++++
+ src/libcamera/ipa_manager.cpp                |   4 +-
+ src/libcamera/pipeline/starfive/starfive.cpp |  56 +++++-
+ src/meson.build                              |   1 +
+ 11 files changed, 350 insertions(+), 4 deletions(-)
+ create mode 100644 include/libcamera/ipa/starfive.mojom
+ create mode 100644 src/ipa/starfive/data/meson.build
+ create mode 100644 src/ipa/starfive/data/starfive.conf
+ create mode 100644 src/ipa/starfive/meson.build
+ create mode 100644 src/ipa/starfive/starfive.cpp
+
+diff --git a/include/libcamera/ipa/meson.build b/include/libcamera/ipa/meson.build
+index 6ea94fb5..b84358a6 100644
+--- a/include/libcamera/ipa/meson.build
++++ b/include/libcamera/ipa/meson.build
+@@ -65,6 +65,7 @@ ipa_mojom_files = [
      'raspberrypi.mojom',
      'rkisp1.mojom',
      'vimc.mojom',
@@ -9,9 +35,11 @@ diff -Naur libcamera-06e53199c2563105030bda4c72752b853da7edc8/include/libcamera/
  ]
  
  ipa_mojoms = []
-diff -Naur libcamera-06e53199c2563105030bda4c72752b853da7edc8/include/libcamera/ipa/starfive.mojom libcamera-06e53199c2563105030bda4c72752b853da7edc8_after/include/libcamera/ipa/starfive.mojom
---- libcamera-06e53199c2563105030bda4c72752b853da7edc8/include/libcamera/ipa/starfive.mojom	1970-01-01 08:00:00.000000000 +0800
-+++ libcamera-06e53199c2563105030bda4c72752b853da7edc8_after/include/libcamera/ipa/starfive.mojom	2021-10-26 10:35:08.196358414 +0800
+diff --git a/include/libcamera/ipa/starfive.mojom b/include/libcamera/ipa/starfive.mojom
+new file mode 100644
+index 00000000..b302b609
+--- /dev/null
++++ b/include/libcamera/ipa/starfive.mojom
 @@ -0,0 +1,45 @@
 +/* SPDX-License-Identifier: LGPL-2.1-or-later */
 +
@@ -58,10 +86,11 @@ diff -Naur libcamera-06e53199c2563105030bda4c72752b853da7edc8/include/libcamera/
 +interface IPAStarfiveEventInterface {
 +	paramsFilled(uint32 bufferId);
 +};
-diff -Naur libcamera-06e53199c2563105030bda4c72752b853da7edc8/meson_options.txt libcamera-06e53199c2563105030bda4c72752b853da7edc8_after/meson_options.txt
---- libcamera-06e53199c2563105030bda4c72752b853da7edc8/meson_options.txt	2021-10-26 10:40:32.171834666 +0800
-+++ libcamera-06e53199c2563105030bda4c72752b853da7edc8_after/meson_options.txt	2021-10-26 10:35:08.196358414 +0800
-@@ -27,7 +27,7 @@
+diff --git a/meson_options.txt b/meson_options.txt
+index 14baa7ef..ba4ecb0b 100644
+--- a/meson_options.txt
++++ b/meson_options.txt
+@@ -27,7 +27,7 @@ option('gstreamer',
  
  option('ipas',
          type : 'array',
@@ -70,23 +99,23 @@ diff -Naur libcamera-06e53199c2563105030bda4c72752b853da7edc8/meson_options.txt 
          description : 'Select which IPA modules to build')
  
  option('lc-compliance',
-diff -Naur libcamera-06e53199c2563105030bda4c72752b853da7edc8/src/gstreamer/gstlibcamerasrc.cpp libcamera-06e53199c2563105030bda4c72752b853da7edc8_after/src/gstreamer/gstlibcamerasrc.cpp
---- libcamera-06e53199c2563105030bda4c72752b853da7edc8/src/gstreamer/gstlibcamerasrc.cpp	2021-10-26 10:40:32.171834666 +0800
-+++ libcamera-06e53199c2563105030bda4c72752b853da7edc8_after/src/gstreamer/gstlibcamerasrc.cpp	2021-10-26 10:36:19.850655340 +0800
-@@ -140,9 +140,19 @@
+diff --git a/src/gstreamer/gstlibcamerasrc.cpp b/src/gstreamer/gstlibcamerasrc.cpp
+index 1dd0e807..6329b01a 100644
+--- a/src/gstreamer/gstlibcamerasrc.cpp
++++ b/src/gstreamer/gstlibcamerasrc.cpp
+@@ -140,9 +140,18 @@ G_DEFINE_TYPE_WITH_CODE(GstLibcameraSrc, gst_libcamera_src, GST_TYPE_ELEMENT,
  
  #define TEMPLATE_CAPS GST_STATIC_CAPS("video/x-raw; image/jpeg")
  
 +#define TEMPLATE_CAPS_SRC GST_STATIC_CAPS("video/x-raw, "\
-+      "format = { (string)BG24,(string)RG24,(string)BA24, \
-+      	          (string)NV12, (string)NV21, (string)NV16, \
-+      	          (string)NV61, (string)NV24, (string)UYVY, \
-+      	          (string)VYUY, (string)YUYV, (string)YVYU}, "\
-+      "width = " GST_VIDEO_SIZE_RANGE ", "\
-+      "height = " GST_VIDEO_SIZE_RANGE ", "\
-+      "framerate = " GST_VIDEO_FPS_RANGE ";"\
++		"format = { (string)BG24,(string)RG24,(string)BA24, \
++			(string)NV12, (string)NV21, (string)NV16, \
++			(string)NV61, (string)NV24, (string)UYVY, \
++			(string)VYUY, (string)YUYV, (string)YVYU}, "\
++			"width = " GST_VIDEO_SIZE_RANGE ", "\
++			"height = " GST_VIDEO_SIZE_RANGE ", "\
++			"framerate = " GST_VIDEO_FPS_RANGE ";"\
 +)
-+
  /* For the simple case, we have a src pad that is always present. */
  GstStaticPadTemplate src_template = {
 -	"src", GST_PAD_SRC, GST_PAD_ALWAYS, TEMPLATE_CAPS
@@ -94,9 +123,11 @@ diff -Naur libcamera-06e53199c2563105030bda4c72752b853da7edc8/src/gstreamer/gstl
  };
  
  /* More pads can be requested in state < PAUSED */
-diff -Naur libcamera-06e53199c2563105030bda4c72752b853da7edc8/src/ipa/starfive/data/meson.build libcamera-06e53199c2563105030bda4c72752b853da7edc8_after/src/ipa/starfive/data/meson.build
---- libcamera-06e53199c2563105030bda4c72752b853da7edc8/src/ipa/starfive/data/meson.build	1970-01-01 08:00:00.000000000 +0800
-+++ libcamera-06e53199c2563105030bda4c72752b853da7edc8_after/src/ipa/starfive/data/meson.build	2021-10-26 10:35:08.196358414 +0800
+diff --git a/src/ipa/starfive/data/meson.build b/src/ipa/starfive/data/meson.build
+new file mode 100644
+index 00000000..0ce6a9b4
+--- /dev/null
++++ b/src/ipa/starfive/data/meson.build
 @@ -0,0 +1,8 @@
 +# SPDX-License-Identifier: CC0-1.0
 +
@@ -106,16 +137,20 @@ diff -Naur libcamera-06e53199c2563105030bda4c72752b853da7edc8/src/ipa/starfive/d
 +
 +install_data(conf_files,
 +             install_dir : ipa_data_dir / 'starfive')
-diff -Naur libcamera-06e53199c2563105030bda4c72752b853da7edc8/src/ipa/starfive/data/starfive.conf libcamera-06e53199c2563105030bda4c72752b853da7edc8_after/src/ipa/starfive/data/starfive.conf
---- libcamera-06e53199c2563105030bda4c72752b853da7edc8/src/ipa/starfive/data/starfive.conf	1970-01-01 08:00:00.000000000 +0800
-+++ libcamera-06e53199c2563105030bda4c72752b853da7edc8_after/src/ipa/starfive/data/starfive.conf	2021-10-26 10:35:08.196358414 +0800
+diff --git a/src/ipa/starfive/data/starfive.conf b/src/ipa/starfive/data/starfive.conf
+new file mode 100644
+index 00000000..6b74f622
+--- /dev/null
++++ b/src/ipa/starfive/data/starfive.conf
 @@ -0,0 +1,3 @@
 +# SPDX-License-Identifier: LGPL-2.1-or-later
 +#
 +# Dummy configuration file for the starfive IPA.
-diff -Naur libcamera-06e53199c2563105030bda4c72752b853da7edc8/src/ipa/starfive/meson.build libcamera-06e53199c2563105030bda4c72752b853da7edc8_after/src/ipa/starfive/meson.build
---- libcamera-06e53199c2563105030bda4c72752b853da7edc8/src/ipa/starfive/meson.build	1970-01-01 08:00:00.000000000 +0800
-+++ libcamera-06e53199c2563105030bda4c72752b853da7edc8_after/src/ipa/starfive/meson.build	2021-10-26 10:35:08.196358414 +0800
+diff --git a/src/ipa/starfive/meson.build b/src/ipa/starfive/meson.build
+new file mode 100644
+index 00000000..c93bd058
+--- /dev/null
++++ b/src/ipa/starfive/meson.build
 @@ -0,0 +1,23 @@
 +# SPDX-License-Identifier: CC0-1.0
 +
@@ -140,9 +175,11 @@ diff -Naur libcamera-06e53199c2563105030bda4c72752b853da7edc8/src/ipa/starfive/m
 +endif
 +
 +subdir('data')
-diff -Naur libcamera-06e53199c2563105030bda4c72752b853da7edc8/src/ipa/starfive/starfive.cpp libcamera-06e53199c2563105030bda4c72752b853da7edc8_after/src/ipa/starfive/starfive.cpp
---- libcamera-06e53199c2563105030bda4c72752b853da7edc8/src/ipa/starfive/starfive.cpp	1970-01-01 08:00:00.000000000 +0800
-+++ libcamera-06e53199c2563105030bda4c72752b853da7edc8_after/src/ipa/starfive/starfive.cpp	2021-10-26 10:35:08.196358414 +0800
+diff --git a/src/ipa/starfive/starfive.cpp b/src/ipa/starfive/starfive.cpp
+new file mode 100644
+index 00000000..e1207606
+--- /dev/null
++++ b/src/ipa/starfive/starfive.cpp
 @@ -0,0 +1,200 @@
 +/* SPDX-License-Identifier: LGPL-2.1-or-later */
 +/*
@@ -344,10 +381,11 @@ diff -Naur libcamera-06e53199c2563105030bda4c72752b853da7edc8/src/ipa/starfive/s
 +}
 +
 +} /* namespace libcamera */
-diff -Naur libcamera-06e53199c2563105030bda4c72752b853da7edc8/src/libcamera/ipa_manager.cpp libcamera-06e53199c2563105030bda4c72752b853da7edc8_after/src/libcamera/ipa_manager.cpp
---- libcamera-06e53199c2563105030bda4c72752b853da7edc8/src/libcamera/ipa_manager.cpp	2021-09-07 07:11:15.000000000 +0800
-+++ libcamera-06e53199c2563105030bda4c72752b853da7edc8_after/src/libcamera/ipa_manager.cpp	2021-10-26 10:35:08.196358414 +0800
-@@ -276,7 +276,9 @@
+diff --git a/src/libcamera/ipa_manager.cpp b/src/libcamera/ipa_manager.cpp
+index ec966045..634cbb8d 100644
+--- a/src/libcamera/ipa_manager.cpp
++++ b/src/libcamera/ipa_manager.cpp
+@@ -276,7 +276,9 @@ IPAModule *IPAManager::module(PipelineHandler *pipe, uint32_t minVersion,
  
  bool IPAManager::isSignatureValid([[maybe_unused]] IPAModule *ipa) const
  {
@@ -358,10 +396,11 @@ diff -Naur libcamera-06e53199c2563105030bda4c72752b853da7edc8/src/libcamera/ipa_
  	char *force = utils::secure_getenv("LIBCAMERA_IPA_FORCE_ISOLATION");
  	if (force && force[0] != '\0') {
  		LOG(IPAManager, Debug)
-diff -Naur libcamera-06e53199c2563105030bda4c72752b853da7edc8/src/libcamera/pipeline/starfive/starfive.cpp libcamera-06e53199c2563105030bda4c72752b853da7edc8_after/src/libcamera/pipeline/starfive/starfive.cpp
---- libcamera-06e53199c2563105030bda4c72752b853da7edc8/src/libcamera/pipeline/starfive/starfive.cpp	2021-10-26 10:40:32.175834819 +0800
-+++ libcamera-06e53199c2563105030bda4c72752b853da7edc8_after/src/libcamera/pipeline/starfive/starfive.cpp	2021-10-26 10:35:08.196358414 +0800
-@@ -23,6 +23,11 @@
+diff --git a/src/libcamera/pipeline/starfive/starfive.cpp b/src/libcamera/pipeline/starfive/starfive.cpp
+index f63af910..bc82a062 100644
+--- a/src/libcamera/pipeline/starfive/starfive.cpp
++++ b/src/libcamera/pipeline/starfive/starfive.cpp
+@@ -23,6 +23,10 @@
  #include <linux/videodev2.h>
  #include <linux/v4l2-subdev.h>
  
@@ -369,11 +408,10 @@ diff -Naur libcamera-06e53199c2563105030bda4c72752b853da7edc8/src/libcamera/pipe
 +#include <libcamera/ipa/ipa_module_info.h>
 +#include <libcamera/ipa/starfive_ipa_interface.h>
 +#include <libcamera/ipa/starfive_ipa_proxy.h>
-+
  #include "libcamera/internal/camera.h"
  #include "libcamera/internal/camera_sensor.h"
  #include "libcamera/internal/device_enumerator.h"
-@@ -189,6 +194,7 @@
+@@ -189,6 +193,7 @@ public:
  	std::vector<SizeRange> sensorSizes() const;
  	std::vector<PixelFormat> sensorFormats() const;
  	std::vector<PixelFormat> videoFormats() const;
@@ -381,7 +419,7 @@ diff -Naur libcamera-06e53199c2563105030bda4c72752b853da7edc8/src/libcamera/pipe
  
  	MediaDevice *media_;
  	V4L2VideoDevice *video_;
-@@ -197,6 +203,8 @@
+@@ -197,6 +202,8 @@ public:
  	CameraSensor *sensor_;
  	Stream outStream_;
  	Stream rawStream_;
@@ -390,7 +428,7 @@ diff -Naur libcamera-06e53199c2563105030bda4c72752b853da7edc8/src/libcamera/pipe
  
  private:
  	bool haveRaw_;
-@@ -591,6 +599,22 @@
+@@ -591,6 +598,22 @@ int PipelineHandlerStarFive::configure(Camera *camera, CameraConfiguration *c)
  			    data->video_->toV4L2PixelFormat(cfg.pixelFormat))
  				return -EINVAL;
  		}
@@ -399,8 +437,8 @@ diff -Naur libcamera-06e53199c2563105030bda4c72752b853da7edc8/src/libcamera/pipe
 +		/* Inform IPA of stream configuration and sensor controls. */
 +		std::map<unsigned int, IPAStream> streamConfig;
 +		streamConfig.emplace(std::piecewise_construct,
-+				     std::forward_as_tuple(0),
-+				     std::forward_as_tuple(cfg.pixelFormat, cfg.size));
++					std::forward_as_tuple(0),
++					std::forward_as_tuple(cfg.pixelFormat, cfg.size));
 +
 +		std::map<unsigned int, ControlInfoMap> entityControls;
 +		entityControls.emplace(0, data->sensor_->controls());
@@ -413,7 +451,7 @@ diff -Naur libcamera-06e53199c2563105030bda4c72752b853da7edc8/src/libcamera/pipe
  	}
  
  	return 0;
-@@ -627,6 +651,17 @@
+@@ -630,6 +653,17 @@ int PipelineHandlerStarFive::start(Camera *camera, const ControlList *controls)
  	ret = data->video_->importBuffers(count);
  	if (ret < 0)
  		return ret;
@@ -431,7 +469,7 @@ diff -Naur libcamera-06e53199c2563105030bda4c72752b853da7edc8/src/libcamera/pipe
  
  	ret = data->video_->streamOn();
  	if (ret < 0)
-@@ -658,6 +693,7 @@
+@@ -661,6 +695,7 @@ int PipelineHandlerStarFive::start(Camera *camera, const ControlList *controls)
  
  	return ret;
  error:
@@ -439,11 +477,10 @@ diff -Naur libcamera-06e53199c2563105030bda4c72752b853da7edc8/src/libcamera/pipe
  	data->video_->releaseBuffers();
  	return ret;
  }
-@@ -668,6 +704,13 @@
+@@ -671,6 +706,12 @@ void PipelineHandlerStarFive::stop(Camera *camera)
  
  	StarFiveCameraData *data = cameraData(camera);
  	data->video_->streamOff();
-+
 +	std::vector<unsigned int> ids;
 +	for (const std::unique_ptr<FrameBuffer> &buffer : data->mockIPABufs_)
 +		ids.push_back(buffer->cookie());
@@ -453,7 +490,7 @@ diff -Naur libcamera-06e53199c2563105030bda4c72752b853da7edc8/src/libcamera/pipe
  	data->video_->releaseBuffers();
  	if (data->rawActive()) {
  		data->raw_->streamOff();
-@@ -810,8 +853,11 @@
+@@ -813,8 +854,11 @@ int PipelineHandlerStarFive::queueRequestDevice(Camera *camera, Request *request
  		LOG(STARFIVE, Debug)
  			<< "stream queueBuffer : " << stream->configuration().toString();
  
@@ -462,11 +499,11 @@ diff -Naur libcamera-06e53199c2563105030bda4c72752b853da7edc8/src/libcamera/pipe
  			ret = data->video_->queueBuffer(buffer);
 +			data->ipa_->processControls(request->sequence(), request->controls());
 +		}
-+			
++
  		else if (stream == &data->rawStream_)
  			ret = data->raw_->queueBuffer(buffer);
  		else
-@@ -915,6 +961,16 @@
+@@ -918,6 +962,16 @@ int PipelineHandlerStarFive::registerCameras()
  		if (data->init())
  			continue;
  
@@ -483,10 +520,11 @@ diff -Naur libcamera-06e53199c2563105030bda4c72752b853da7edc8/src/libcamera/pipe
  		/* Create and register the camera. */
  		LOG(STARFIVE, Debug) << "register deviceName: "
  				     << videoEntiryName;
-diff -Naur libcamera-06e53199c2563105030bda4c72752b853da7edc8/src/meson.build libcamera-06e53199c2563105030bda4c72752b853da7edc8_after/src/meson.build
---- libcamera-06e53199c2563105030bda4c72752b853da7edc8/src/meson.build	2021-09-07 07:11:15.000000000 +0800
-+++ libcamera-06e53199c2563105030bda4c72752b853da7edc8_after/src/meson.build	2021-10-26 10:35:08.196358414 +0800
-@@ -20,6 +20,7 @@
+diff --git a/src/meson.build b/src/meson.build
+index e0ea9c35..8ae89b5b 100644
+--- a/src/meson.build
++++ b/src/meson.build
+@@ -20,6 +20,7 @@ if openssl.found()
                                   output : ['ipa-priv-key.pem'],
                                   command : [gen_ipa_priv_key, '@OUTPUT@'])
      config_h.set('HAVE_IPA_PUBKEY', 1)
@@ -494,3 +532,6 @@ diff -Naur libcamera-06e53199c2563105030bda4c72752b853da7edc8/src/meson.build li
      ipa_sign_module = true
  else
      ipa_sign_module = false
+-- 
+2.25.1
+

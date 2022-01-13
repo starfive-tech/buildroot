@@ -1,11 +1,11 @@
-From dccc998ecf580e5c41b290a60e6b6f170601dc29 Mon Sep 17 00:00:00 2001
+From 4c51694d5f3fbb23423f60165f928e50e7d9c3a3 Mon Sep 17 00:00:00 2001
 From: sw.multimedia <sw.multimedia@starfivetech.com>
 Date: Wed, 15 Dec 2021 17:13:58 +0800
-Subject: [PATCH] support use yaml file to config sensor pipeline
+Subject: [PATCH 08/10] support use yaml file to config sensor pipeline
 
 ---
  src/libcamera/meson.build                     |   3 +
- .../pipeline/starfive/sensors_pipeline.yaml     |  35 ++++++
+ .../pipeline/starfive/sensors_pipeline.yaml   |  35 ++++++
  src/libcamera/pipeline/starfive/starfive.cpp  | 106 ++++++++++++++++--
  3 files changed, 132 insertions(+), 12 deletions(-)
  create mode 100644 src/libcamera/pipeline/starfive/sensors_pipeline.yaml
@@ -73,7 +73,7 @@ index 00000000..3446b0ac
 +    sensortype: 8
 +...
 diff --git a/src/libcamera/pipeline/starfive/starfive.cpp b/src/libcamera/pipeline/starfive/starfive.cpp
-index bb513387..8afe5e89 100644
+index b91a85a4..864addfa 100644
 --- a/src/libcamera/pipeline/starfive/starfive.cpp
 +++ b/src/libcamera/pipeline/starfive/starfive.cpp
 @@ -9,6 +9,8 @@
@@ -85,7 +85,7 @@ index bb513387..8afe5e89 100644
  
  #include <libcamera/camera.h>
  #include <libcamera/control_ids.h>
-@@ -40,14 +42,7 @@
+@@ -39,14 +41,7 @@
  
  #define STF_MAX_CAMERAS   3
  
@@ -101,7 +101,7 @@ index bb513387..8afe5e89 100644
  
  namespace {
  
-@@ -67,14 +62,16 @@ typedef enum {
+@@ -66,14 +61,16 @@ typedef enum {
  typedef struct {
  	std::string sensorEntityName_;
  	std::string sensorFwImageName_;
@@ -120,7 +120,7 @@ index bb513387..8afe5e89 100644
  typedef struct {
  	std::string source;
  	std::string link;
-@@ -140,6 +137,40 @@ const std::vector<PipelineConfigLink> pipelineConfigs[SENSORTYPE_MAX] = {
+@@ -139,6 +136,40 @@ const std::vector<PipelineConfigLink> pipelineConfigs[SENSORTYPE_MAX] = {
  	mipicsi1raw1Config,
  };
  
@@ -161,7 +161,7 @@ index bb513387..8afe5e89 100644
  const std::map<uint32_t, PixelFormat> mbusCodesToPixelFormat = {
  	{ MEDIA_BUS_FMT_SBGGR10_1X10, formats::SBGGR12 },
  	{ MEDIA_BUS_FMT_SGBRG10_1X10, formats::SGBRG12 },
-@@ -147,8 +178,6 @@ const std::map<uint32_t, PixelFormat> mbusCodesToPixelFormat = {
+@@ -146,8 +177,6 @@ const std::map<uint32_t, PixelFormat> mbusCodesToPixelFormat = {
  	{ MEDIA_BUS_FMT_SRGGB10_1X10, formats::SRGGB12 },
  };
  
@@ -170,7 +170,7 @@ index bb513387..8afe5e89 100644
  class StarFiveCameraData : public Camera::Private
  {
  public:
-@@ -424,6 +453,7 @@ private:
+@@ -423,6 +452,7 @@ private:
  	int enableLinks(std::vector<PipelineConfigLink> config);
  
  	MediaDevice *starFiveMediaDev_;
@@ -178,7 +178,7 @@ index bb513387..8afe5e89 100644
  };
  
  StarFiveCameraConfiguration::StarFiveCameraConfiguration(StarFiveCameraData *data)
-@@ -1044,6 +1074,56 @@ int PipelineHandlerStarFive::enableLinks(std::vector<PipelineConfigLink> config)
+@@ -1042,6 +1072,56 @@ int PipelineHandlerStarFive::enableLinks(std::vector<PipelineConfigLink> config)
  	return ret;
  }
  
@@ -235,7 +235,7 @@ index bb513387..8afe5e89 100644
  bool PipelineHandlerStarFive::match(DeviceEnumerator *enumerator)
  {
  	int numCameras = 0;
-@@ -1061,6 +1141,8 @@ bool PipelineHandlerStarFive::match(DeviceEnumerator *enumerator)
+@@ -1059,6 +1139,8 @@ bool PipelineHandlerStarFive::match(DeviceEnumerator *enumerator)
  	if (starFiveMediaDev_->disableLinks())
  		return false;
  
@@ -245,5 +245,5 @@ index bb513387..8afe5e89 100644
  		MediaEntity *sensorEntity =
  			starFiveMediaDev_->getEntityByName(it.sensorEntityName_);
 -- 
-2.17.1
+2.25.1
 
