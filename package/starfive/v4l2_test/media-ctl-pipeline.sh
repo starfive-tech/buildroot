@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # SPDX-License-Identifier: GPL-2.0
 #
 # Copyright (C) 2021 StarFive Technology Co., Ltd.
@@ -6,7 +6,7 @@
 
 USAGE="Usage:
 	  media-ctl-pipeline.sh -d devname -i interface_type -s sensor_type -a action
-	    devname:  Media device name (default: /dev/media0)
+	    devname:  Media device name (default select starfive media device)
 	    interface_type One of the following:
 			   dvp
 			   csiphy0
@@ -32,6 +32,18 @@ USAGE="Usage:
 "
 
 devname="/dev/media0"
+index=0
+while [ $index -le 10 ]
+do
+	dev="/dev/media""$index"
+	drivername=$(media-ctl -d $dev -p | grep driver | grep stf-vin)
+	if [ -n "$drivername" ]; then
+		devname=$dev
+		echo "found starfive media device: $devname"
+		break
+	fi
+	let index++
+done
 
 while getopts "d:i:s:a:" arg
 do
