@@ -28,13 +28,33 @@ int yuyv_resize(const uint8_t *inBuf, uint8_t *outBuf, int imgWidth, int imgHeig
     int YUVinpos;    /* Y U V offset */
     int width, height;
     int x_offset, y_offset;
-    uint8_t *tmp = malloc(g_screen_size);
     uint32_t start_timems;
     uint32_t end_timems;
     struct timeval ts_start, ts_end;
+    static uint8_t *tmp = NULL;
 
     if (!tmp)
-        return -1;
+    {
+        tmp = malloc(g_screen_size);
+        if (tmp)
+        {
+            // for YUYV buffer, set it to black
+            for ( rows = 0; rows < g_screen_size; rows++)
+            {
+                if (rows == 0 || rows % 2 == 0)
+                {
+                    //even is Y
+                    tmp[rows] = 0;
+                }
+                else
+                {
+                    //odd is U or V
+                    tmp[rows] = 128;
+                }
+            }
+        }
+    }
+    assert(tmp);
 
     gettimeofday(&ts_start, NULL);
 
@@ -55,7 +75,7 @@ int yuyv_resize(const uint8_t *inBuf, uint8_t *outBuf, int imgWidth, int imgHeig
         start_timems = ts_start.tv_sec * 1000 + ts_start.tv_usec/1000;
         end_timems = ts_end.tv_sec * 1000 + ts_end.tv_usec/1000;
         // printf("%s: copy use %dms, sizeof(int) = %d\n", __func__, end_timems - start_timems, sizeof(int));
-        free(tmp);
+        //free(tmp);
         return 0;
     }
 
@@ -83,7 +103,7 @@ int yuyv_resize(const uint8_t *inBuf, uint8_t *outBuf, int imgWidth, int imgHeig
     end_timems = ts_end.tv_sec * 1000 + ts_end.tv_usec/1000;
     // printf("%s: copy use %dms, sizeof(int) = %d\n", __func__, end_timems - start_timems, sizeof(int));
 
-    free(tmp);
+    //free(tmp);
     return 0;
 
 }
@@ -97,13 +117,22 @@ int convert_yuyv_to_nv12(const uint8_t *inBuf, uint8_t *outBuf, int imgWidth, in
     int fb_Ypos, fb_Upos, fb_Vpos;
     int width, height;
     int x_offset, y_offset;
-    uint8_t *tmp = malloc(g_screen_size);
     uint32_t start_timems;
     uint32_t end_timems;
     struct timeval ts_start, ts_end;
+    static uint8_t *tmp = NULL;
 
     if (!tmp)
-        return -1;
+    {
+        tmp = malloc(g_screen_size);
+        if (tmp)
+        {
+            // for NV12 buffer, set it to black
+            memset(tmp, 0, g_screen_size / 3 * 2);
+            memset(tmp + g_screen_size / 3 * 2, 128, g_screen_size / 3);
+        }
+    }
+    assert(tmp);
 
     gettimeofday(&ts_start, NULL);
 
@@ -148,7 +177,7 @@ int convert_yuyv_to_nv12(const uint8_t *inBuf, uint8_t *outBuf, int imgWidth, in
     end_timems = ts_end.tv_sec * 1000 + ts_end.tv_usec/1000;
     // printf("%s: copy use %dms, sizeof(int) = %d\n", __func__, end_timems - start_timems, sizeof(int));
 
-    free(tmp);
+    //free(tmp);
     return 0;
 }
 
@@ -162,12 +191,23 @@ int convert_nv21_to_nv12(const uint8_t *inBuf, uint8_t *outBuf,
     int fb_Ypos, fb_Upos, fb_Vpos;
     int width, height;
     int x_offset, y_offset;
-    uint8_t *tmp = malloc(g_screen_size);
+    static uint8_t *tmp = NULL;
     uint32_t start_timems;
     uint32_t end_timems;
     struct timeval ts_start, ts_end;
 
+    if (!tmp)
+    {
+        tmp = malloc(g_screen_size);
+        if (tmp)
+        {
+            // for NV12 buffer, set it to black
+            memset(tmp, 0, g_screen_size / 3 * 2);
+            memset(tmp + g_screen_size / 3 * 2, 128, g_screen_size / 3);
+        }
+    }
     assert(tmp);
+
     gettimeofday(&ts_start, NULL);
 
     width = imgWidth > g_screen_width ? g_screen_width : imgWidth;
@@ -198,7 +238,7 @@ int convert_nv21_to_nv12(const uint8_t *inBuf, uint8_t *outBuf,
             memcpy(&outBuf[fb_Ypos], inBuf, imgWidth * height);
             memcpy(&outBuf[fb_Upos], &inBuf[Upos], imgWidth * height / 2);
         }
-        free(tmp);
+        //free(tmp);
         return 0;
     }
 
@@ -241,7 +281,7 @@ int convert_nv21_to_nv12(const uint8_t *inBuf, uint8_t *outBuf,
     end_timems = ts_end.tv_sec * 1000 + ts_end.tv_usec/1000;
     // printf("%s: copy use %dms, sizeof(int) = %d\n", __func__, end_timems - start_timems, sizeof(int));
 
-    free(tmp);
+    //free(tmp);
     return 0;
 }
 
