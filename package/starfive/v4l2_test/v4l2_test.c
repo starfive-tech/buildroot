@@ -51,6 +51,7 @@ typedef struct {
 
     uint8_t jpegQuality;
     char* jpegFilename;
+    FILE *rec_fp;
 
     int dmabufs[BUFCOUNT];  // for dmabuf use, mmap not use it
 } ConfigParam_t;
@@ -80,7 +81,7 @@ static void alloc_default_config(ConfigParam_t **pp_data)
     cfg_param->v4l2_param.height = 1080;
     cfg_param->v4l2_param.image_size = cfg_param->v4l2_param.width *
                 cfg_param->v4l2_param.height * 3 / 2;
-    cfg_param->v4l2_param.format = V4L2_PIX_FMT_NV21; // V4L2_PIX_FMT_RGB565
+    cfg_param->v4l2_param.format = V4L2_PIX_FMT_NV12; // V4L2_PIX_FMT_RGB565
     cfg_param->v4l2_param.fps = 30;
 
     // the fb param will be updated after fb init
@@ -185,24 +186,30 @@ static void imageProcess(const uint8_t* inbuf, uint8_t* outbuf,
     char filename[512];
     switch (in_format) {
         case V4L2_PIX_FMT_YUV420:
-            if (jpegFilename) {
-                // sprintf(filename, "%d-yuv420-%s", s_frmcnt, jpegFilename);
-                // YUV420toYUV444(in_width, in_height, inbuf, dst);
-                // jpegWrite(dst, filename);
-                sprintf(filename, "raw-%d-yuv420-%s", s_frmcnt, jpegFilename);
-                write_file(filename, inbuf, in_imagesize);
-                s_frmcnt++;
+            // if (jpegFilename) {
+            //     // sprintf(filename, "%d-yuv420-%s", s_frmcnt, jpegFilename);
+            //     // YUV420toYUV444(in_width, in_height, inbuf, dst);
+            //     // jpegWrite(dst, filename);
+            //     sprintf(filename, "raw-%d-yuv420-%s", s_frmcnt, jpegFilename);
+            //     write_file(filename, inbuf, in_imagesize);
+            //     s_frmcnt++;
+            // }
+            if (gp_cfg_param->jpegFilename && gp_cfg_param->rec_fp) {
+                fwrite(inbuf, in_imagesize, 1, gp_cfg_param->rec_fp);
             }
             break;
         case V4L2_PIX_FMT_YUYV:
         case V4L2_PIX_FMT_YVYU:
-            if (jpegFilename) {
-                // sprintf(filename, "%d-yuv422-%s", s_frmcnt, jpegFilename);
-                // YUV422toYUV444(in_width, in_height, inbuf, dst);
-                // jpegWrite(dst, filename);
-                sprintf(filename, "raw-%d-yuv422-%s", s_frmcnt, jpegFilename);
-                write_file(filename, inbuf, in_imagesize);
-                s_frmcnt++;
+            // if (jpegFilename) {
+            //     // sprintf(filename, "%d-yuv422-%s", s_frmcnt, jpegFilename);
+            //     // YUV422toYUV444(in_width, in_height, inbuf, dst);
+            //     // jpegWrite(dst, filename);
+            //     sprintf(filename, "raw-%d-yuv422-%s", s_frmcnt, jpegFilename);
+            //     write_file(filename, inbuf, in_imagesize);
+            //     s_frmcnt++;
+            // }
+            if (gp_cfg_param->jpegFilename && gp_cfg_param->rec_fp) {
+                fwrite(inbuf, in_imagesize, 1, gp_cfg_param->rec_fp);
             }
             if (out_format == new_in_format) {
                 yuyv_resize(inbuf, outbuf, in_width, in_height);
@@ -215,13 +222,16 @@ static void imageProcess(const uint8_t* inbuf, uint8_t* outbuf,
             }
             break;
         case V4L2_PIX_FMT_NV21:
-            if (gp_cfg_param->jpegFilename) {
-                // sprintf(filename, "%d-nv21-%s", s_frmcnt, gp_cfg_param->jpegFilename);
-                // YUV420NV21toYUV444(in_width, in_height, inbuf, dst, 0);
-                // jpegWrite(dst, filename);
-                sprintf(filename, "raw-%d-nv21-%s", s_frmcnt, gp_cfg_param->jpegFilename);
-                write_file(filename, inbuf, in_imagesize);
-                s_frmcnt++;
+            // if (gp_cfg_param->jpegFilename) {
+            //     // sprintf(filename, "%d-nv21-%s", s_frmcnt, gp_cfg_param->jpegFilename);
+            //     // YUV420NV21toYUV444(in_width, in_height, inbuf, dst, 0);
+            //     // jpegWrite(dst, filename);
+            //     sprintf(filename, "raw-nv21-%s",  gp_cfg_param->jpegFilename);
+            //     write_file(filename, inbuf, in_imagesize);
+            //     s_frmcnt++;
+            // }
+            if (gp_cfg_param->jpegFilename && gp_cfg_param->rec_fp) {
+                fwrite(inbuf, in_imagesize, 1, gp_cfg_param->rec_fp);
             }
             LOG(STF_LEVEL_LOG, "out_format=%d, new_in_format=%d, is_yuv420sp=%d\n", out_format,
                     new_in_format, is_yuv420sp);
@@ -236,13 +246,16 @@ static void imageProcess(const uint8_t* inbuf, uint8_t* outbuf,
             }
             break;
         case V4L2_PIX_FMT_NV12:
-            if (jpegFilename) {
-                // sprintf(filename, "%d-nv12-%s", s_frmcnt, jpegFilename);
-                // YUV420NV12toYUV444(in_width, in_height, inbuf, dst);
-                // jpegWrite(dst, filename);
-                sprintf(filename, "raw-%d-nv12-%s", s_frmcnt, jpegFilename);
-                write_file(filename, inbuf, in_imagesize);
-                s_frmcnt++;
+            // if (jpegFilename) {
+            //     // sprintf(filename, "%d-nv12-%s", s_frmcnt, jpegFilename);
+            //     // YUV420NV12toYUV444(in_width, in_height, inbuf, dst);
+            //     // jpegWrite(dst, filename);
+            //     sprintf(filename, "raw-%d-nv12-%s", s_frmcnt, jpegFilename);
+            //     write_file(filename, inbuf, in_imagesize);
+            //     s_frmcnt++;
+            // }
+            if (gp_cfg_param->jpegFilename && gp_cfg_param->rec_fp) {
+                fwrite(inbuf, in_imagesize, 1, gp_cfg_param->rec_fp);
             }
             LOG(STF_LEVEL_DEBUG, "out_format=%d, new_in_format=%d, is_yuv420sp=%d\n", out_format,
                     new_in_format, is_yuv420sp);
@@ -255,24 +268,30 @@ static void imageProcess(const uint8_t* inbuf, uint8_t* outbuf,
             }
             break;
         case V4L2_PIX_FMT_RGB24:
-            if (jpegFilename) {
-                // sprintf(filename, "%d-rgb-%s", s_frmcnt, jpegFilename);
-                // RGB565toRGB888(in_width, in_height, inbuf, dst);
-                // write_JPEG_file(filename, inbuf, in_width, in_height, jpegQuality);
-                sprintf(filename, "raw-%d-rgb-%s", s_frmcnt, jpegFilename);
-                write_file(filename, inbuf, in_imagesize);
-                s_frmcnt++;
+            // if (jpegFilename) {
+            //     // sprintf(filename, "%d-rgb-%s", s_frmcnt, jpegFilename);
+            //     // RGB565toRGB888(in_width, in_height, inbuf, dst);
+            //     // write_JPEG_file(filename, inbuf, in_width, in_height, jpegQuality);
+            //     sprintf(filename, "raw-%d-rgb-%s", s_frmcnt, jpegFilename);
+            //     write_file(filename, inbuf, in_imagesize);
+            //     s_frmcnt++;
+            // }
+            if (gp_cfg_param->jpegFilename && gp_cfg_param->rec_fp) {
+                fwrite(inbuf, in_imagesize, 1, gp_cfg_param->rec_fp);
             }
             convert_rgb888_to_rgb(inbuf, outbuf, in_width, in_height, 0);
             break;
         case V4L2_PIX_FMT_RGB565:
-            if (jpegFilename) {
-                // sprintf(filename, "%d-rgb565-%s", s_frmcnt, jpegFilename);
-                // RGB565toRGB888(in_width, in_height, inbuf, dst);
-                // write_JPEG_file(filename, dst, in_width, in_height, jpegQuality);
-                sprintf(filename, "raw-%d-rgb565-%s", s_frmcnt, jpegFilename);
-                write_file(filename, inbuf, in_imagesize);
-                s_frmcnt++;
+            // if (jpegFilename) {
+            //     // sprintf(filename, "%d-rgb565-%s", s_frmcnt, jpegFilename);
+            //     // RGB565toRGB888(in_width, in_height, inbuf, dst);
+            //     // write_JPEG_file(filename, dst, in_width, in_height, jpegQuality);
+            //     sprintf(filename, "raw-%d-rgb565-%s", s_frmcnt, jpegFilename);
+            //     write_file(filename, inbuf, in_imagesize);
+            //     s_frmcnt++;
+            // }
+            if (gp_cfg_param->jpegFilename && gp_cfg_param->rec_fp) {
+                fwrite(inbuf, in_imagesize, 1, gp_cfg_param->rec_fp);
             }
             if (out_format == new_in_format)
                 convert_rgb565_to_rgb(inbuf, outbuf, in_width, in_height, 0);
@@ -538,6 +557,14 @@ static void mainloop()
         exit(EXIT_FAILURE);
     }
 
+    if (!gp_cfg_param->rec_fp && gp_cfg_param->jpegFilename) {
+        gp_cfg_param->rec_fp = fopen(gp_cfg_param->jpegFilename, "w+");
+        if (!gp_cfg_param->rec_fp) {
+            LOG(STF_LEVEL_ERR, "can't open %s\n", gp_cfg_param->jpegFilename);
+            exit(EXIT_FAILURE);
+        }
+    }
+
     while (count-- > 0) {
         r = poll(fds, nfds, 3000);
         if (-1 == r) {
@@ -588,6 +615,14 @@ static void mainloop()
         free(fds);
         fds = NULL;
     }
+
+
+    if (gp_cfg_param->rec_fp) {
+        fclose(gp_cfg_param->rec_fp);
+        gp_cfg_param->rec_fp = NULL;
+    }
+
+
     LOG(STF_LEVEL_TRACE, "Exit\n");
 }
 
@@ -598,8 +633,8 @@ static void usage(FILE* fp, int argc, char** argv)
         "Options:\n"
         "-d | --device name   Video device name [default /dev/video0]\n"
         "-h | --help          Print this message\n"
-        "-o | --output        Set JPEG output filename\n"
-        "-q | --quality       Set JPEG quality (0-100)\n"
+        "-o | --output        Save raw data to filename\n"
+        //"-q | --quality       Set JPEG quality (0-100)\n"
         "-m | --method        Set V4L2 videobuf2 memory type, default 0\n"
         "                0: IO_METHOD_MMAP\n"
         "                1: IO_METHOD_USERPTR\n"
@@ -614,7 +649,7 @@ static void usage(FILE* fp, int argc, char** argv)
         "-I | --interval      Set frame interval (fps) (-1 to skip)\n"
         "-c | --continuous    Do continous capture, stop with SIGINT.\n"
         "-v | --version       Print version\n"
-        "-f | --format        image format, default 4\n"
+        "-f | --format        image format, default 5\n"
         "                0: V4L2_PIX_FMT_RGB565\n"
         "                1: V4L2_PIX_FMT_RGB24\n"
         "                2: V4L2_PIX_FMT_YUV420\n"
@@ -635,8 +670,8 @@ static void usage(FILE* fp, int argc, char** argv)
         "-s | --g_imagesize     print image size\n"
         "\n"
         "Eg:\n"
-        "\t drm: v4l2test -d /dev/video2  -f 4 -c -W 1920 -H 1080 -m 2 -t 2\n"
-        "\t fb:  v4l2test -d /dev/video2  -f 4 -c -W 1920 -H 1080 -m 0 -t 1\n"
+        "\t drm: v4l2test -d /dev/video2 -f 5 -c -W 1920 -H 1080 -m 2 -t 2\n"
+        "\t fb:  v4l2test -d /dev/video2 -f 5 -c -W 1920 -H 1080 -m 0 -t 1\n"
         "\n"
         "Open debug log level: \n"
         "\t export V4L2_DEBUG=3\n"
