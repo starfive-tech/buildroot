@@ -1,0 +1,7 @@
+comment "sf-omx-il-test package"
+
+config BR2_PACKAGE_SF_OMX_IL_TEST
+	bool "sf-omx-il-test"
+	depends on BR2_PACKAGE_SF_OMX_IL && BR2_PACKAGE_FFMPEG
+	help
+	  sf-omx-il-test package
