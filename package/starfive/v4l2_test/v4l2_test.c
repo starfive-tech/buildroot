@@ -661,7 +661,7 @@ static void usage(FILE* fp, int argc, char** argv)
         "                8: V4L2_PIX_FMT_SGRBG12\n"
         "                9: V4L2_PIX_FMT_SGBRG12\n"
         "                10: V4L2_PIX_FMT_SBGGR12\n"
-        "                default: V4L2_PIX_FMT_RGB565\n"
+        "                default: V4L2_PIX_FMT_NV12\n"
         "-t | --distype       set display type, default 0\n"
         "                0: Not display\n"
         "                1: Use Framebuffer Display\n"
