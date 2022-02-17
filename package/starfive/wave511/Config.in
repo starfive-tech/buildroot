@@ -2,6 +2,5 @@ comment "wave511 package"
 
 config BR2_PACKAGE_WAVE511
 	bool "wave511"
-	depends on BR2_KERNEL_HEADERS_CUSTOM_GIT
 	help
 	  wave511 package
