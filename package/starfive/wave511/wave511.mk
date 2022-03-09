@@ -5,7 +5,6 @@
 ################################################################################
 
 
-WAVE511_VERSION:=1.0.0
 WAVE511_SITE=$(TOPDIR)/../soft_3rdpart/wave511/code
 WAVE511_SITE_METHOD=local
 WAVE511_INSTALL_STAGING = YES

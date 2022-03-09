@@ -1,6 +1,7 @@
 # starfive packages
 source "package/starfive/wave511/Config.in"
 source "package/starfive/wave521/Config.in"
+source "package/starfive/codaj12/Config.in"
 source "package/starfive/sf-omx-il/Config.in"
 source "package/starfive/sf-omx-il-test/Config.in"
 source "package/starfive/sf-gst-omx/Config.in"
