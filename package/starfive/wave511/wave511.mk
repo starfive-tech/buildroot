@@ -71,7 +71,7 @@ define WAVE511_UNINSTALL_TARGET_CMDS
 	rm -rf $(TARGET_DIR)/root/vdec_unload.sh
 endef
 
-wave511_WORK_DIR := $(TARGET_DIR)/../build/wave511-$(WAVE511_VERSION)
+wave511_WORK_DIR := $(TARGET_DIR)/../build/wave511
 wave511driver:
 ifneq ($(wildcard $(wave511_WORK_DIR)/WaveDecDriver_buildroot.mak),)
 	$(TARGET_MAKE_ENV) $(MAKE) -C $(wave511_WORK_DIR) -f $(wave511_WORK_DIR)/WaveDecDriver_buildroot.mak
