@@ -180,6 +180,13 @@ else
 FFMPEG_CONF_OPTS += --disable-outdevs
 endif
 
+ifeq ($(BR2_PACKAGE_PULSEAUDIO),y)
+FFMPEG_CONF_OPTS += --enable-libpulse
+FFMPEG_DEPENDENCIES += pulseaudio
+else
+FFMPEG_CONF_OPTS += --disable-libpulse
+endif
+
 ifeq ($(BR2_TOOLCHAIN_HAS_THREADS),y)
 FFMPEG_CONF_OPTS += --enable-pthreads
 else
