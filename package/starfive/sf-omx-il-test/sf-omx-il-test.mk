@@ -19,6 +19,7 @@ endef
 define SF_OMX_IL_TEST_INSTALL_TARGET_CMDS
 	$(INSTALL) -m 0777 $(@D)/video_dec_test $(TARGET_DIR)/root/video_dec_test
 	$(INSTALL) -m 0777 $(@D)/video_enc_test $(TARGET_DIR)/root/video_enc_test
+	$(INSTALL) -m 0777 $(@D)/mjpeg_dec_test $(TARGET_DIR)/root/mjpeg_dec_test
 endef
 
 define SF_OMX_IL_TEST_UNINSTALL_TARGET_CMDS

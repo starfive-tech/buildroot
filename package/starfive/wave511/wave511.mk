@@ -5,7 +5,6 @@
 ################################################################################
 
 
-WAVE511_VERSION:=1.0.0
 WAVE511_SITE=$(TOPDIR)/../soft_3rdpart/wave511/code
 WAVE511_SITE_METHOD=local
 WAVE511_INSTALL_STAGING = YES
@@ -72,7 +71,7 @@ define WAVE511_UNINSTALL_TARGET_CMDS
 	rm -rf $(TARGET_DIR)/root/vdec_unload.sh
 endef
 
-wave511_WORK_DIR := $(TARGET_DIR)/../build/wave511-$(WAVE511_VERSION)
+wave511_WORK_DIR := $(TARGET_DIR)/../build/wave511
 wave511driver:
 ifneq ($(wildcard $(wave511_WORK_DIR)/WaveDecDriver_buildroot.mak),)
 	$(TARGET_MAKE_ENV) $(MAKE) -C $(wave511_WORK_DIR) -f $(wave511_WORK_DIR)/WaveDecDriver_buildroot.mak
