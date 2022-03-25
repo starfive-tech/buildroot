@@ -2,6 +2,5 @@ comment "codaj12 package"
 
 config BR2_PACKAGE_CODAJ12
 	bool "codaj12"
-	depends on BR2_KERNEL_HEADERS_CUSTOM_GIT
 	help
 	  codaj12 package
