@@ -1,0 +1,25 @@
+From bb176c96d1e03bfcde3b70474b1fd39a7b7a955a Mon Sep 17 00:00:00 2001
+From: Som Qin <som.qin@starfivetech.com>
+Date: Wed, 30 Mar 2022 20:14:01 +0800
+Subject: [PATCH] ffmpeg: fix docoder bug with null pointer
+
+Signed-off-by: Som Qin <som.qin@starfivetech.com>
+---
+ libavcodec/omxdec.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/libavcodec/omxdec.c b/libavcodec/omxdec.c
+index d055d19..0ccc1dc 100755
+--- a/libavcodec/omxdec.c
++++ b/libavcodec/omxdec.c
+@@ -815,6 +815,7 @@ static int omx_decode_frame(AVCodecContext *avctx, void *data,
+             if((s->eos_sent && !evnet_bufferflag) || (avctx->codec_id == AV_CODEC_ID_MJPEG )) {
+ 				continue; 
+        		}
++            break;
+         } 
+ 
+ 		if(!buffer->nFilledLen){
+-- 
+2.25.1
+
