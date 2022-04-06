@@ -1,0 +1,31 @@
+--- a/config/stf/gstomx.conf
++++ b/config/stf/gstomx.conf
+@@ -42,3 +42,4 @@
+ out-port-index=1
+ rank=1
+ hacks=pass-profile-to-decoder;pass-color-format-to-decoder;ensure-buffer-count-actual
++src-template-caps=video/x-raw, format = (string) { NV16_10LE32, NV12_10LE32, NV16, YUY2, YVYU, UYVY, NV12, NV21, I420, RGB16, BGR16, ABGR, ARGB, GRAY8, I422_10LE, Y444 }, width = (int) [ 1, max ], height = (int) [ 1, max ], framerate = (fraction) [ 0, max ]
+--- a/omx/gstomxvideo.c
++++ b/omx/gstomxvideo.c
+@@ -48,6 +48,8 @@
+       format = GST_VIDEO_FORMAT_I420;
+       break;
+     case OMX_COLOR_FormatYUV420SemiPlanar:
++      format = GST_VIDEO_FORMAT_NV21;
++      break;
+     case OMX_COLOR_FormatYUV420PackedSemiPlanar:
+       format = GST_VIDEO_FORMAT_NV12;
+       break;
+@@ -94,6 +96,10 @@
+       break;
+ #pragma GCC diagnostic pop
+ #endif
++    case OMX_COLOR_FormatYUV422Planar:
++      format = GST_VIDEO_FORMAT_I422_10LE;
++    case OMX_COLOR_FormatYUV444Interleaved:
++      format = GST_VIDEO_FORMAT_Y444;
+     default:
+       format = GST_VIDEO_FORMAT_UNKNOWN;
+       break;
+
+
