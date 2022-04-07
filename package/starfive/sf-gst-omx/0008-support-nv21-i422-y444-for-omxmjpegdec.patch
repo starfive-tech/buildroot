@@ -7,14 +7,18 @@
 +src-template-caps=video/x-raw, format = (string) { NV16_10LE32, NV12_10LE32, NV16, YUY2, YVYU, UYVY, NV12, NV21, I420, RGB16, BGR16, ABGR, ARGB, GRAY8, I422_10LE, Y444 }, width = (int) [ 1, max ], height = (int) [ 1, max ], framerate = (fraction) [ 0, max ]
 --- a/omx/gstomxvideo.c
 +++ b/omx/gstomxvideo.c
-@@ -48,6 +48,8 @@
+@@ -48,9 +48,11 @@
        format = GST_VIDEO_FORMAT_I420;
        break;
      case OMX_COLOR_FormatYUV420SemiPlanar:
+-    case OMX_COLOR_FormatYUV420PackedSemiPlanar:
+       format = GST_VIDEO_FORMAT_NV12;
+       break;
++    case OMX_COLOR_FormatYUV420PackedSemiPlanar:
 +      format = GST_VIDEO_FORMAT_NV21;
 +      break;
-     case OMX_COLOR_FormatYUV420PackedSemiPlanar:
-       format = GST_VIDEO_FORMAT_NV12;
+     case OMX_COLOR_FormatYUV422SemiPlanar:
+       format = GST_VIDEO_FORMAT_NV16;
        break;
 @@ -94,6 +96,10 @@
        break;
@@ -27,5 +31,3 @@
      default:
        format = GST_VIDEO_FORMAT_UNKNOWN;
        break;
-
-
