@@ -1,0 +1,66 @@
+From e71dfa49e89759b1c04541a7d4303d28a65142aa Mon Sep 17 00:00:00 2001
+From: wanglm1125 <wanglm1125@thundersoft.com>
+Date: Fri, 1 Apr 2022 13:39:39 +0800
+Subject: [PATCH] ffmpeg add hevc vps support mkv/mp4 mux
+
+---
+ libavcodec/omx.c | 24 ++++++++++++++++++++----
+ 1 file changed, 20 insertions(+), 4 deletions(-)
+
+diff --git a/libavcodec/omx.c b/libavcodec/omx.c
+index e3140f1..d638fa0 100644
+--- a/libavcodec/omx.c
++++ b/libavcodec/omx.c
+@@ -42,6 +42,7 @@
+ 
+ #include "avcodec.h"
+ #include "h264.h"
++#include "hevc.h"
+ #include "internal.h"
+ #include "profiles.h"
+ 
+@@ -671,8 +672,8 @@ static av_cold int omx_encode_init(AVCodecContext *avctx)
+         role = "video_encoder.avc";
+         break;
+ 	case AV_CODEC_ID_HEVC:
+-		role = "video_encoder.hevc";
+-		break;
++	role = "video_encoder.hevc";
++	break;
+     default:
+         return AVERROR(ENOSYS);
+     }
+@@ -722,13 +723,28 @@ static av_cold int omx_encode_init(AVCodecContext *avctx)
+                 }
+                 if (nals[H264_NAL_SPS] && nals[H264_NAL_PPS])
+                     break;
+-            } else {
++            } else if (avctx->codec->id == AV_CODEC_ID_HEVC) {
++                // For H.265, the extradata can be returned in two separate buffers
++                // (the videocore encoder on raspberry pi does this);
++                // therefore check that we have got both SPS and PPS before continuing.
++                int nals[128] = { 0 };
++                int i;
++                for (i = 0; i + 4 < avctx->extradata_size; i++) {
++                     if (!avctx->extradata[i + 0] &&
++                         !avctx->extradata[i + 1] &&
++                         !avctx->extradata[i + 2] &&
++                         avctx->extradata[i + 3] == 1) {
++                         nals[(avctx->extradata[i + 4] & 0x7E) >> 1]++;
++                     }
++                }
++                if (nals[HEVC_NAL_SPS] && nals[HEVC_NAL_PPS] && nals[HEVC_NAL_VPS])
++                    break;
++		} else {
+                 if (avctx->extradata_size > 0)
+                     break;
+             }
+         }
+     }
+-
+     return 0;
+ fail:
+     return ret;
+-- 
+2.17.1
+
