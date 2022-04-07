@@ -1,5 +1,5 @@
-From a3756db6257742587da7e97546aa330ad363bfd1 Mon Sep 17 00:00:00 2001
-From: sw.multimedia <sw.multimedia@starfivetech.com>
+From 974fd356e8cb6f72ddc94d147c5139de4dfe575f Mon Sep 17 00:00:00 2001
+From: "sw.multimedia" <sw.multimedia@starfivetech.com>
 Date: Tue, 26 Oct 2021 12:29:30 +0800
 Subject: [PATCH 02/10] add sensor ctrls
 
@@ -8,7 +8,7 @@ Subject: [PATCH 02/10] add sensor ctrls
  1 file changed, 99 insertions(+), 19 deletions(-)
 
 diff --git a/src/libcamera/pipeline/starfive/starfive.cpp b/src/libcamera/pipeline/starfive/starfive.cpp
-index 8797bdcb..f63af910 100644
+index d6b03020..743bb3dd 100644
 --- a/src/libcamera/pipeline/starfive/starfive.cpp
 +++ b/src/libcamera/pipeline/starfive/starfive.cpp
 @@ -370,7 +370,7 @@ public:
@@ -172,10 +172,10 @@ index 8797bdcb..f63af910 100644
  	int error = 0;
  
  	LOG(STARFIVE, Debug) << __func__;
--	int ret = processControls(data, request);
-+	int ret = processControls(data, request->controls());
- 	if (ret < 0)
- 		return ret;
+-	int res = processControls(data, request);
++	int res = processControls(data, request->controls());
+	if (res < 0)
+		return res;
  
 -- 
 2.25.1

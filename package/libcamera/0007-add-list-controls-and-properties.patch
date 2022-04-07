@@ -1,5 +1,5 @@
-From 5e558d4454fa476cc9e0670a30d631a1174b55a2 Mon Sep 17 00:00:00 2001
-From: sw.multimedia <sw.multimedia@starfivetech.com>
+From d356d4e40d356a9e83e42ac8ea2274949231ae53 Mon Sep 17 00:00:00 2001
+From: "sw.multimedia" <sw.multimedia@starfivetech.com>
 Date: Tue, 23 Nov 2021 10:44:04 +0800
 Subject: [PATCH 07/10] add list controls and properties
 
@@ -8,7 +8,7 @@ Subject: [PATCH 07/10] add list controls and properties
  1 file changed, 165 insertions(+), 54 deletions(-)
 
 diff --git a/src/libcamera/pipeline/starfive/starfive.cpp b/src/libcamera/pipeline/starfive/starfive.cpp
-index 58e1f55a..b91a85a4 100644
+index 2cea960b..b07bd2a4 100644
 --- a/src/libcamera/pipeline/starfive/starfive.cpp
 +++ b/src/libcamera/pipeline/starfive/starfive.cpp
 @@ -185,7 +185,9 @@ public:
@@ -122,14 +122,14 @@ index 58e1f55a..b91a85a4 100644
 -			cid = V4L2_CID_BLUE_BALANCE;
 -			value = lroundf(it.second.get<Span<const float>>()[1]);
 -			LOG(STARFIVE, Debug) << "COLOUR_GAINS BLUE value: " << value;
- 			break;
- 		case controls::AWB_ENABLE:
- 			cid = V4L2_CID_AUTO_WHITE_BALANCE;
+			break;
+		case controls::AWB_ENABLE:
+			cid = V4L2_CID_AUTO_WHITE_BALANCE;
 -			value = it.second.get<bool>();
 -			LOG(STARFIVE, Debug) << "AwbMode controls: " << id
 -				<< ", value: " << value;
- 			break;
- 		case controls::EXPOSURE_VALUE:
+			break;
+		case controls::EXPOSURE_VALUE:
  			cid = V4L2_CID_EXPOSURE;
 -			offset = 0;
 -			value = lroundf(it.second.get<float>());
@@ -171,7 +171,7 @@ index 58e1f55a..b91a85a4 100644
 +		int32_t min = v4l2Info.min().get<int32_t>();
 +		int32_t def = v4l2Info.def().get<int32_t>();
 +		int32_t max = v4l2Info.max().get<int32_t>();
-+
++		LOG(STARFIVE, Debug) << "min: " << min << " def: " << def << " max: " << max;
 +		switch (id) {
 +		case controls::SATURATION:
 +		case controls::SHARPNESS:
@@ -191,16 +191,16 @@ index 58e1f55a..b91a85a4 100644
 +			cid = V4L2_CID_BLUE_BALANCE;
 +			value = static_cast<int32_t>(lroundf(it.second.get<float>()));
 +			LOG(STARFIVE, Debug) << "COLOUR_GAINS BLUE value: " << value;
-+			break;
-+		}
+			break;
+		}
 +		case controls::AWB_ENABLE:
 +		case controls::AE_ENABLE:
 +			value = it.second.get<bool>();
- 			break;
++			break;
 +		default:
 +			LOG(STARFIVE, Debug) << "default controls: " << id;
 +			continue;
- 		}
++		}
  
 +		LOG(STARFIVE, Debug) << "controls: " << id << ", value: " << value;
  		if (SensorControlsInfoMap.find(cid) != SensorControlsInfoMap.end())

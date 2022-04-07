@@ -1,8 +1,8 @@
-From 26127511bf0b6d2f016c16956d04332858bd8d7f Mon Sep 17 00:00:00 2001
-From: sw.multimedia <sw.multimedia@starfivetech.com>
+From 4cb053569e691c435081e75ee5282c0d48c95678 Mon Sep 17 00:00:00 2001
+From: "sw.multimedia" <sw.multimedia@starfivetech.com>
 Date: Thu, 13 Jan 2022 13:52:11 +0800
-Subject: [PATCH 03/10] libcamera: 1. add caps for src templ            2. add
- starfive ipa (dummy)
+Subject: [PATCH 03/10] libcamera: 1. add caps for src templ 2. add starfive
+ ipa (dummy)
 
 ---
  include/libcamera/ipa/meson.build            |   1 +
@@ -397,7 +397,7 @@ index ec966045..634cbb8d 100644
  	if (force && force[0] != '\0') {
  		LOG(IPAManager, Debug)
 diff --git a/src/libcamera/pipeline/starfive/starfive.cpp b/src/libcamera/pipeline/starfive/starfive.cpp
-index f63af910..bc82a062 100644
+index 743bb3dd..ebfa670f 100644
 --- a/src/libcamera/pipeline/starfive/starfive.cpp
 +++ b/src/libcamera/pipeline/starfive/starfive.cpp
 @@ -23,6 +23,10 @@
@@ -415,7 +415,7 @@ index f63af910..bc82a062 100644
  	std::vector<SizeRange> sensorSizes() const;
  	std::vector<PixelFormat> sensorFormats() const;
  	std::vector<PixelFormat> videoFormats() const;
-+	void paramsFilled(unsigned int id){}
++	void paramsFilled([[maybe_unused]] unsigned int id){}
  
  	MediaDevice *media_;
  	V4L2VideoDevice *video_;

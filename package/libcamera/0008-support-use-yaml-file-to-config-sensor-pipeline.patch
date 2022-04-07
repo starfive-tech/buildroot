@@ -1,5 +1,5 @@
-From 4c51694d5f3fbb23423f60165f928e50e7d9c3a3 Mon Sep 17 00:00:00 2001
-From: sw.multimedia <sw.multimedia@starfivetech.com>
+From cfcc58c9c9daf1cafb98c36af7a73705b7853a0f Mon Sep 17 00:00:00 2001
+From: "sw.multimedia" <sw.multimedia@starfivetech.com>
 Date: Wed, 15 Dec 2021 17:13:58 +0800
 Subject: [PATCH 08/10] support use yaml file to config sensor pipeline
 
@@ -73,7 +73,7 @@ index 00000000..3446b0ac
 +    sensortype: 8
 +...
 diff --git a/src/libcamera/pipeline/starfive/starfive.cpp b/src/libcamera/pipeline/starfive/starfive.cpp
-index b91a85a4..864addfa 100644
+index b07bd2a4..27eb631e 100644
 --- a/src/libcamera/pipeline/starfive/starfive.cpp
 +++ b/src/libcamera/pipeline/starfive/starfive.cpp
 @@ -9,6 +9,8 @@
@@ -199,7 +199,7 @@ index b91a85a4..864addfa 100644
 +			<< ", sensorType: " << it.sensorType_;
 +}
 +
-+int PipelineHandlerStarFive::parserPipelineConfig(const char *filename)
++int PipelineHandlerStarFive::parserPipelineConfig([[maybe_unused]] const char *filename)
 +{
 +	LOG(STARFIVE, Debug) << __func__;
 +	try {
