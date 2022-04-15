@@ -1,2 +1,3 @@
 # starfive packages
 source "package/starfive/v4l2_test/Config.in"
+source "package/starfive/stfisp_setfile/Config.in.host"
