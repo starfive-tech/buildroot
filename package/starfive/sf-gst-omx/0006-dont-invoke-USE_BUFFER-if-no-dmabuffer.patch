@@ -7,7 +7,7 @@
 +#ifdef USE_OMX_TARGET_STARFIVE
 +  if ( !gst_is_dmabuf_memory (mem)) {
 +    GST_INFO_OBJECT (self,
-+        " %d-th buffer doesn't contain dmabuf, go to out. port->port_def.nBufferSize: %d",
++        " %d-th buffer doesn't contain dmabuf, go to out. port->port_def.nBufferSize: %lu",
 +        i, port->port_def.nBufferSize);
 +    goto out;
 +  } 
