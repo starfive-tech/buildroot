@@ -1,5 +1,5 @@
-From 4d84bab2e88580bb96a24343051f2ea8132dc4e3 Mon Sep 17 00:00:00 2001
-From: sw.multimedia <sw.multimedia@starfivetech.com>
+From 6a5f3e568fd0398f8990021e8fce4674d2d43f11 Mon Sep 17 00:00:00 2001
+From: "sw.multimedia" <sw.multimedia@starfivetech.com>
 Date: Thu, 13 Jan 2022 14:44:18 +0800
 Subject: [PATCH 10/10] libcamera: add framerate for request pad src.
 
@@ -7,9 +7,9 @@ Subject: [PATCH 10/10] libcamera: add framerate for request pad src.
  include/libcamera/internal/v4l2_videodevice.h |  7 +-
  include/libcamera/stream.h                    |  8 +++
  src/gstreamer/gstlibcamera-utils.cpp          | 16 +++--
- src/libcamera/pipeline/starfive/starfive.cpp  | 37 ++++++++++
+ src/libcamera/pipeline/starfive/starfive.cpp  | 36 ++++++++++
  src/libcamera/v4l2_videodevice.cpp            | 68 +++++++++++++++++++
- 5 files changed, 131 insertions(+), 5 deletions(-)
+ 5 files changed, 130 insertions(+), 5 deletions(-)
 
 diff --git a/include/libcamera/internal/v4l2_videodevice.h b/include/libcamera/internal/v4l2_videodevice.h
 index a1c458e4..650da22d 100644
@@ -95,7 +95,7 @@ index bce4960a..4cd07508 100644
  	gst_caps_append_structure(caps, s);
  
 diff --git a/src/libcamera/pipeline/starfive/starfive.cpp b/src/libcamera/pipeline/starfive/starfive.cpp
-index 61a2ddc6..997d9835 100644
+index 333bd097..4c80e856 100644
 --- a/src/libcamera/pipeline/starfive/starfive.cpp
 +++ b/src/libcamera/pipeline/starfive/starfive.cpp
 @@ -43,6 +43,9 @@
@@ -108,16 +108,15 @@ index 61a2ddc6..997d9835 100644
  namespace {
  
  typedef enum {
-@@ -225,6 +228,8 @@ public:
+@@ -225,6 +228,7 @@ public:
  	std::vector<SizeRange> sensorSizes() const;
  	std::vector<PixelFormat> sensorFormats() const;
  	std::vector<PixelFormat> videoFormats() const;
 +	std::vector<Framerate> videoFrameRates(unsigned int pixelformat, unsigned int width, unsigned int height) const;
-+
- 	void paramsFilled(unsigned int id){}
+	void paramsFilled([[maybe_unused]] unsigned int id){}
  	int ispLoadFW(const char *filename);
  
-@@ -269,6 +274,24 @@ std::vector<PixelFormat> StarFiveCameraData::videoFormats() const
+@@ -269,6 +273,24 @@ std::vector<PixelFormat> StarFiveCameraData::videoFormats() const
  	return formats;
  }
  
@@ -142,7 +141,7 @@ index 61a2ddc6..997d9835 100644
  std::vector<PixelFormat> StarFiveCameraData::sensorFormats() const
  {
  	if (!sensor_)
-@@ -480,6 +503,20 @@ CameraConfiguration::Status StarFiveCameraConfiguration::validate()
+@@ -480,6 +502,20 @@ CameraConfiguration::Status StarFiveCameraConfiguration::validate()
  		cfg.size.height = std::max(OUTPUT_MIN_SIZE.height,
  				std::min(OUTPUT_MAX_SIZE.height, cfg.size.height));
  

@@ -1,5 +1,5 @@
-From d936cae7ba6ab3ae4665ac889bcef4c90354c36b Mon Sep 17 00:00:00 2001
-From: sw.multimedia <sw.multimedia@starfivetech.com>
+From 4faf895c941b94f577482747586468beb2ace072 Mon Sep 17 00:00:00 2001
+From: "sw.multimedia" <sw.multimedia@starfivetech.com>
 Date: Sat, 9 Oct 2021 18:09:44 +0800
 Subject: [PATCH 01/10] add starfive pipeline
 
@@ -139,7 +139,7 @@ index 00000000..2f2d2a75
 +])
 diff --git a/src/libcamera/pipeline/starfive/starfive.cpp b/src/libcamera/pipeline/starfive/starfive.cpp
 new file mode 100644
-index 00000000..8797bdcb
+index 00000000..d6b03020
 --- /dev/null
 +++ b/src/libcamera/pipeline/starfive/starfive.cpp
 @@ -0,0 +1,940 @@
@@ -866,9 +866,9 @@ index 00000000..8797bdcb
 +	int error = 0;
 +
 +	LOG(STARFIVE, Debug) << __func__;
-+	int ret = processControls(data, request);
-+	if (ret < 0)
-+		return ret;
++	int res = processControls(data, request);
++	if (res < 0)
++		return res;
 +
 +	for (auto it : request->buffers()) {
 +		const Stream *stream = it.first;

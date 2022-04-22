@@ -1,5 +1,5 @@
-From a24624e164f041e86d9c864a4eb83ab8c2befee4 Mon Sep 17 00:00:00 2001
-From: sw.multimedia <sw.multimedia@starfivetech.com>
+From d2b64b8a6e900675f82617bbf2e2cd01ec987e3e Mon Sep 17 00:00:00 2001
+From: "sw.multimedia" <sw.multimedia@starfivetech.com>
 Date: Thu, 16 Dec 2021 17:46:03 +0800
 Subject: [PATCH 09/10] csi0/csi1 can be configured to the same ISP
 
@@ -8,7 +8,7 @@ Subject: [PATCH 09/10] csi0/csi1 can be configured to the same ISP
  1 file changed, 89 insertions(+), 57 deletions(-)
 
 diff --git a/src/libcamera/pipeline/starfive/starfive.cpp b/src/libcamera/pipeline/starfive/starfive.cpp
-index 864addfa..61a2ddc6 100644
+index 27eb631e..333bd097 100644
 --- a/src/libcamera/pipeline/starfive/starfive.cpp
 +++ b/src/libcamera/pipeline/starfive/starfive.cpp
 @@ -182,11 +182,11 @@ class StarFiveCameraData : public Camera::Private
@@ -33,7 +33,7 @@ index 864addfa..61a2ddc6 100644
  	std::vector<SizeRange> sensorSizes() const;
  	std::vector<PixelFormat> sensorFormats() const;
  	std::vector<PixelFormat> videoFormats() const;
- 	void paramsFilled(unsigned int id){}
+	void paramsFilled([[maybe_unused]] unsigned int id){}
 +	int ispLoadFW(const char *filename);
  
  	MediaDevice *media_;
