@@ -9,9 +9,9 @@ Subject: [PATCH] add starfive support
  core/libcamera_app.cpp |  38 ++++--
  core/options.hpp       |   3 +
  preview/CMakeLists.txt |   9 ++
- preview/fb_preview.cpp | 289 +++++++++++++++++++++++++++++++++++++++++
+ preview/fb_preview.cpp | 283 +++++++++++++++++++++++++++++++++++++++++
  preview/preview.cpp    |   7 +-
- 7 files changed, 338 insertions(+), 12 deletions(-)
+ 7 files changed, 332 insertions(+), 12 deletions(-)
  create mode 100644 preview/fb_preview.cpp
 
 diff --git a/CMakeLists.txt b/CMakeLists.txt
@@ -166,10 +166,10 @@ index 1a7481f..a772e14 100644
  
 diff --git a/preview/fb_preview.cpp b/preview/fb_preview.cpp
 new file mode 100644
-index 0000000..1a88b79
+index 0000000..680c7b0
 --- /dev/null
 +++ b/preview/fb_preview.cpp
-@@ -0,0 +1,289 @@
+@@ -0,0 +1,283 @@
 +/* SPDX-License-Identifier: BSD-2-Clause */
 +/*
 + * Copyright (C) 2021, Raspberry Pi (Trading) Ltd.
@@ -239,8 +239,8 @@ index 0000000..1a88b79
 +public:
 +	FbPreview(Options const *options);
 +	~FbPreview();
-+	void SetInfoText(const std::string &text) override 
-+	{ 
++	void SetInfoText(const std::string &text) override
++	{
 +		std::cout << "Camera fps: " << text << std::endl;
 +	}
 +	// Display the buffer. You get given the fd back in the BufferDoneCallback
@@ -322,12 +322,12 @@ index 0000000..1a88b79
 +	std::cout << "get pp format : "
 +		<< pp_info[1].src.format
 +		<< std::endl;
-+	
++
 +	pp_info[1].src.format = pixformat;
-+	
++
 +	if (-1 == ioctl(g_stfbc_fd, FBIOPAN_SET_PP_MODE, &pp_info[0]))
 +		throw std::runtime_error("Error reading variable information.");
-+	
++
 +	if (-1 == ioctl(g_stfbc_fd, FBIOPAN_GET_PP_MODE, &pp_info[0]))
 +		throw std::runtime_error("Error reading variable information.");
 +
@@ -336,15 +336,15 @@ index 0000000..1a88b79
 +		<< std::endl;
 +
 +	pixformat = pp_info[1].src.format;
-+	
++
 +	// Get fixed screen information
 +	if (-1 == ioctl(g_fb_fd, FBIOGET_FSCREENINFO, &g_finfo))
 +		throw std::runtime_error("Error reading fixed information.");
-+	
++
 +	// Get variable screen information
 +	if (-1 == ioctl(g_fb_fd, FBIOGET_VSCREENINFO, &g_vinfo))
 +		throw std::runtime_error("Error reading variable information.");
-+	
++
 +	std::cout << "g_vinfo.xres = " << g_vinfo.xres
 +		<< ", g_vinfo.yres = " << g_vinfo.yres
 +		<< ", grayscale = " << g_vinfo.grayscale
@@ -355,7 +355,7 @@ index 0000000..1a88b79
 +	std::cout << "g_vinfo.bits_per_pixel = " << g_vinfo.bits_per_pixel
 +		<< ", g_finfo.line_length = " << g_finfo.line_length
 +		<< std::endl;
-+	
++
 +	g_screensize = g_vinfo.xres * g_vinfo.yres * g_vinfo.bits_per_pixel / 8;
 +	g_fb_buf = (unsigned char *)mmap(NULL, g_screensize, PROT_READ | PROT_WRITE, MAP_SHARED, g_fb_fd, 0);
 +	if (g_fb_buf == (void *)(-1))
@@ -383,25 +383,22 @@ index 0000000..1a88b79
 +int FbPreview::NVResize(unsigned char *inBuf,
 +		unsigned char *outBuf, int imgWidth, int imgHeight)
 +{
-+	int rows, cols;
++	int rows;
 +	unsigned char *OutNVdata, *InNVdata;
-+	int Ypos, Upos, Vpos;
-+	int fb_Ypos, fb_Upos, fb_Vpos;
++	int Ypos, Upos;
++	int fb_Ypos, fb_Upos;
 +	int width, height;
 +	int x_offset, y_offset;
-+	unsigned int start_timems;
-+	unsigned int end_timems;
-+	struct timeval ts_start, ts_end;
 +
-+	width = imgWidth > g_vinfo.xres ? g_vinfo.xres : imgWidth;
-+	height = imgHeight > g_vinfo.yres ? g_vinfo.yres : imgHeight;
++	width = imgWidth > (int) g_vinfo.xres ? g_vinfo.xres : imgWidth;
++	height = imgHeight > (int) g_vinfo.yres ? g_vinfo.yres : imgHeight;
 +	x_offset = (g_vinfo.xres - width) / 2;
 +	y_offset = (g_vinfo.yres - height) / 2;
 +
 +	InNVdata = inBuf;
 +	OutNVdata = tmpBuf;
 +
-+	if (imgWidth == g_vinfo.xres) {
++	if (imgWidth == (int) g_vinfo.xres) {
 +		fb_Ypos = y_offset * g_vinfo.xres + x_offset;
 +		fb_Upos = (y_offset / 2 * g_vinfo.xres / 2 + x_offset / 2) * 2;
 +		fb_Upos = g_vinfo.xres * g_vinfo.yres + fb_Upos;
@@ -420,11 +417,9 @@ index 0000000..1a88b79
 +		fb_Ypos = ((rows + y_offset) * g_vinfo.xres + x_offset);
 +		fb_Upos = ((rows + y_offset) / 2 * g_vinfo.xres / 2 + x_offset / 2) * 2;
 +		fb_Upos = g_vinfo.xres * g_vinfo.yres + fb_Upos;
-+		fb_Vpos = fb_Upos + 1;
 +
 +		Ypos = rows * imgWidth;
 +		Upos = imgWidth * imgHeight + Ypos / 2;
-+		Vpos = Upos + 1;
 +		memcpy(&OutNVdata[fb_Ypos], &InNVdata[Ypos], width);
 +		memcpy(&OutNVdata[fb_Ypos+g_vinfo.xres], &InNVdata[Ypos+imgWidth], width);
 +
@@ -438,7 +433,6 @@ index 0000000..1a88b79
 +
 +void FbPreview::Show(int fd, libcamera::Span<uint8_t> span, int width, int height, int stride)
 +{
-+	int imgsize = stride * height + stride * height / 2;
 +	auto startTime = std::chrono::high_resolution_clock::now();
 +
 +	if (pixformat == COLOR_YUV420_NV21 || pixformat == COLOR_YUV420_NV12)
@@ -485,5 +479,5 @@ index 68d193a..0086d83 100644
  		}
  	}
 -- 
-2.17.1
+2.25.1
 

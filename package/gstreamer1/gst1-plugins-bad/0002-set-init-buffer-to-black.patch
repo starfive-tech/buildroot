@@ -4,7 +4,7 @@
      goto bo_failed;
    fb_id = kmsmem->fb_id;
 
-+  GST_INFO_OBJECT (self, "size = %d, width = %d, height = %d.", vinfo->size, vinfo->width, vinfo->height);
++  GST_INFO_OBJECT (self, "size = %lu, width = %lu, height = %lu.", vinfo->size, vinfo->width, vinfo->height);
 +  if (vinfo->size == vinfo->width * vinfo->height * 3 / 2) {
 +    GstMapInfo mapInfo;
 +    if (gst_memory_map((GstMemory *)kmsmem, &mapInfo, GST_MAP_WRITE)) {

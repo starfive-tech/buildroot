@@ -1,6 +1,6 @@
-diff -Naur sf-gst-omx-1.18.1_before/omx/gstomx.h sf-gst-omx-1.18.1/omx/gstomx.h
---- sf-gst-omx-1.18.1_before/omx/gstomx.h	2022-04-07 18:17:13.164438014 +0800
-+++ sf-gst-omx-1.18.1/omx/gstomx.h	2022-04-07 18:18:05.212478320 +0800
+diff -Naur a/omx/gstomx.h b/omx/gstomx.h
+--- a/omx/gstomx.h	2020-10-26 19:17:03.488452200 +0800
++++ b/omx/gstomx.h	2022-04-24 18:50:01.353690234 +0800
 @@ -332,6 +332,7 @@
     */
    gint settings_cookie;
@@ -9,10 +9,10 @@ diff -Naur sf-gst-omx-1.18.1_before/omx/gstomx.h sf-gst-omx-1.18.1/omx/gstomx.h
  };
 
  struct _GstOMXComponent {
-diff -Naur sf-gst-omx-1.18.1_before/omx/gstomxvideoenc.c sf-gst-omx-1.18.1/omx/gstomxvideoenc.c
---- sf-gst-omx-1.18.1_before/omx/gstomxvideoenc.c	2022-04-07 18:17:13.248438093 +0800
-+++ sf-gst-omx-1.18.1/omx/gstomxvideoenc.c	2022-04-07 18:31:04.976677271 +0800
-@@ -2102,6 +2102,75 @@
+diff -Naur a/omx/gstomxvideoenc.c b/omx/gstomxvideoenc.c
+--- a/omx/gstomxvideoenc.c	2020-10-26 19:17:03.492452100 +0800
++++ b/omx/gstomxvideoenc.c	2022-04-24 18:53:42.211595096 +0800
+@@ -2102,6 +2102,143 @@
    return TRUE;
  }
 
@@ -48,7 +48,7 @@ diff -Naur sf-gst-omx-1.18.1_before/omx/gstomxvideoenc.c sf-gst-omx-1.18.1/omx/g
 +
 +  if ( !gst_is_dmabuf_memory (mem)) {
 +    GST_INFO_OBJECT (self,
-+        " %d-th buffer doesn't contain dmabuf, go to out. port->port_def.nBufferSize: %d",
++        " %d-th buffer doesn't contain dmabuf, go to out. port->port_def.nBufferSize: %lu",
 +        i, port->port_def.nBufferSize);
 +    goto out;
 +  }
@@ -85,82 +85,88 @@ diff -Naur sf-gst-omx-1.18.1_before/omx/gstomxvideoenc.c sf-gst-omx-1.18.1/omx/g
 +}
 +#endif
 +
++#ifdef USE_OMX_TARGET_STARFIVE
++static gboolean
++gst_omx_video_enc_use_buffers (GstOMXVideoEnc * self)
++{
++  GstOMXPort * port = self->enc_in_port;
++  GstBufferPool *pool = port->c_buf->pool;
++  GstVideoCodecState *input_state = self->input_state;
++  GstVideoInfo v_info = input_state->info;
++  guint n = port->port_def.nBufferCountActual;
++  GList *images = NULL;
++  GList *buffers = NULL;
++  GList *frames = NULL;
++  OMX_ERRORTYPE err = OMX_ErrorNone;
++  gboolean is_mapped = FALSE ;
++  GST_DEBUG(" nBufferCountActual=%d, nBufferCountMin= %lu", n, port->port_def.nBufferCountMin);
++
++  if ( pool != NULL ) {
++    guint i;
++    for (i = 0; i < n; i++) {
++      GstBuffer * buf = NULL;
++      GstVideoFrame *frame = NULL;
++      buf = gst_omx_try_importing_buffer (self, pool, port, &v_info, i, &frame);
++      if (!buf) {
++        GST_DEBUG_OBJECT (self, "Failed to import %d-th buffer", i);
++        g_list_free (images);
++        g_list_free_full (frames, (GDestroyNotify) gst_video_frame_unmap);
++        g_list_free_full (buffers, (GDestroyNotify) gst_buffer_unref);
++        break;
++      } else {
++          buffers = g_list_append (buffers, buf);
++          frames = g_list_append (frames, frame);
++          images = g_list_append (images, GST_VIDEO_FRAME_PLANE_DATA (frame, 0));
++          GST_DEBUG_OBJECT (self, " pBuffer: %p", GST_VIDEO_FRAME_PLANE_DATA (frame, 0));
++      }
++    }
++  }
++
++  if (images) {
++    is_mapped = TRUE;
++
++    err = gst_omx_port_use_buffers (port, images);
++    g_list_free (images);
++    g_list_free_full (frames, (GDestroyNotify) gst_video_frame_unmap);
++
++    if (err == OMX_ErrorNone) {
++      GST_DEBUG_OBJECT (self, "Using %d buffers", n);
++    } else {
++      GST_INFO_OBJECT (self,
++          "Failed to OMX_UseBuffer on port: %s (0x%08x)",
++          gst_omx_error_to_string (err), err);
++      g_list_free_full (buffers, (GDestroyNotify) gst_buffer_unref);
++      return FALSE;
++    }
++  }
++
++  if ( !is_mapped ) {
++    GST_WARNING_OBJECT (self, " failed to call UseBuffer, trying to use allocation");
++    self->input_dmabuf = FALSE;
++    self->input_allocation = GST_OMX_BUFFER_ALLOCATION_ALLOCATE_BUFFER;
++    if (gst_omx_port_allocate_buffers (self->enc_in_port) != OMX_ErrorNone){
++      return FALSE;
++    }
++  }
++
++  return TRUE;
++}
++#endif
++
  static gboolean
  gst_omx_video_enc_allocate_in_buffers (GstOMXVideoEnc * self)
  {
-@@ -2115,6 +2184,71 @@
+@@ -2115,6 +2252,9 @@
          return FALSE;
        break;
      case GST_OMX_BUFFER_ALLOCATION_USE_BUFFER:
 +#ifdef USE_OMX_TARGET_STARFIVE
-+      GST_DEBUG("GST_OMX_BUFFER_ALLOCATION_USE_BUFFER");
-+      GstOMXPort * port = self->enc_in_port;
-+      GstBufferPool *pool = port->c_buf->pool;
-+      GstVideoCodecState *input_state = self->input_state;
-+      GstVideoInfo v_info = input_state->info;
-+      guint n = port->port_def.nBufferCountActual;
-+      GList *images = NULL;
-+      GList *buffers = NULL;
-+      GList *frames = NULL;
-+      OMX_ERRORTYPE err = OMX_ErrorNone;
-+      gboolean is_mapped = FALSE ;
-+      GST_DEBUG(" nBufferCountActual=%d, nBufferCountMin= %d", n, port->port_def.nBufferCountMin);
-+
-+      if ( pool != NULL ) {
-+        guint i;
-+        for (i = 0; i < n; i++) {
-+          GstBuffer * buf = NULL;
-+          GstVideoFrame *frame = NULL;
-+          GstBufferPoolAcquireParams params = { 0, };
-+          GstFlowReturn ret = GST_FLOW_OK;
-+          buf = gst_omx_try_importing_buffer (self, pool, port, &v_info, i, &frame);
-+          if (!buf) {
-+            GST_DEBUG_OBJECT (self, "Failed to import %d-th buffer", i);
-+            g_list_free (images);
-+            g_list_free_full (frames, (GDestroyNotify) gst_video_frame_unmap);
-+            g_list_free_full (buffers, (GDestroyNotify) gst_buffer_unref);
-+            break;
-+          } else {
-+              buffers = g_list_append (buffers, buf);
-+              frames = g_list_append (frames, frame);
-+              images = g_list_append (images, GST_VIDEO_FRAME_PLANE_DATA (frame, 0));
-+              GST_DEBUG_OBJECT (self, " pBuffer: %p", GST_VIDEO_FRAME_PLANE_DATA (frame, 0));
-+          }
-+        }
-+      }
-+
-+      if (images) {
-+        is_mapped = TRUE;
-+
-+        err = gst_omx_port_use_buffers (port, images);
-+        g_list_free (images);
-+        g_list_free_full (frames, (GDestroyNotify) gst_video_frame_unmap);
-+
-+        if (err == OMX_ErrorNone) {
-+          GST_DEBUG_OBJECT (self, "Using %d buffers", n);
-+        } else {
-+          GST_INFO_OBJECT (self,
-+              "Failed to OMX_UseBuffer on port: %s (0x%08x)",
-+              gst_omx_error_to_string (err), err);
-+          g_list_free_full (buffers, (GDestroyNotify) gst_buffer_unref);
-+          return FALSE;
-+        }
-+      }
-+
-+      if ( !is_mapped ) {
-+        GST_WARNING_OBJECT (self, " failed to call UseBuffer, trying to use allocation");
-+        self->input_dmabuf = FALSE;
-+        self->input_allocation = GST_OMX_BUFFER_ALLOCATION_ALLOCATE_BUFFER;
-+        if (gst_omx_port_allocate_buffers (self->enc_in_port) != OMX_ErrorNone){
-+          return FALSE;
-+        }
-+      }
-+      break;
++      return gst_omx_video_enc_use_buffers(self);
 +#endif
      default:
        /* Not supported */
        g_return_val_if_reached (FALSE);
-@@ -2179,8 +2313,18 @@
+@@ -2179,8 +2319,18 @@
  gst_omx_video_enc_pick_input_allocation_mode (GstOMXVideoEnc * self,
      GstBuffer * inbuf)
  {
@@ -179,7 +185,7 @@ diff -Naur sf-gst-omx-1.18.1_before/omx/gstomxvideoenc.c sf-gst-omx-1.18.1/omx/g
 
    if (can_use_dynamic_buffer_mode (self, inbuf)) {
      GST_DEBUG_OBJECT (self,
-@@ -2272,6 +2416,15 @@
+@@ -2272,6 +2422,15 @@
          input);
      self->input_dmabuf = FALSE;
 
@@ -195,7 +201,7 @@ diff -Naur sf-gst-omx-1.18.1_before/omx/gstomxvideoenc.c sf-gst-omx-1.18.1/omx/g
  #ifdef USE_OMX_TARGET_ZYNQ_USCALE_PLUS
      if (gst_is_dmabuf_memory (gst_buffer_peek_memory (input, 0))) {
        if (self->input_allocation ==
-@@ -2786,7 +2939,11 @@
+@@ -2786,7 +2945,11 @@
    }
 
    if (self->enc_in_port->allocation ==
@@ -208,7 +214,7 @@ diff -Naur sf-gst-omx-1.18.1_before/omx/gstomxvideoenc.c sf-gst-omx-1.18.1/omx/g
      if (gst_buffer_n_memory (inbuf) > 1) {
        GST_ELEMENT_ERROR (self, STREAM, FORMAT, (NULL),
            ("input buffer now has more than one memory, can't use dynamic allocation any more"));
-@@ -2812,12 +2969,29 @@
+@@ -2812,12 +2975,29 @@
            gst_buffer_get_size (inbuf));
      } else {
        /* dmabuf input */
