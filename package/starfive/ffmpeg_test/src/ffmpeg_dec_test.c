@@ -17,24 +17,25 @@
 #define INBUF_SIZE 4096
 #define DRM_DEVICE_NAME      "/dev/dri/card0"
 
-static void pgm_save(unsigned char *buf, int wrap, int xsize, int ysize,
-        char *filename)
-{
-    FILE *f;
-    int i;
-printf("[%s,%d]: wrap=%d, xsize=%d, ysize=%d, filename=%s\n",__FUNCTION__,__LINE__, wrap, xsize, ysize, filename);
-    f = fopen(filename,"w");
-    for (i = 0; i < ysize; i++)
-        fwrite(buf + i * wrap, 1, xsize, f);
-    fclose(f);
-}
+// static void pgm_save(unsigned char *buf, int wrap, int xsize, int ysize,
+//         char *filename)
+// {
+//     FILE *f;
+//     int i;
+// printf("[%s,%d]: wrap=%d, xsize=%d, ysize=%d, filename=%s\n",__FUNCTION__,__LINE__, wrap, xsize, ysize, filename);
+//     f = fopen(filename,"w");
+//     for (i = 0; i < ysize; i++)
+//         fwrite(buf + i * wrap, 1, xsize, f);
+//     fclose(f);
+// }
 
 static void yuv_save(unsigned char **buf, int *wrap, int xsize, int ysize,
                      char *filename)
 {
     FILE *f;
-    int i, j, plane_idx = 0;
-printf("[%s,%d]: wrap=%d, xsize=%d, ysize=%d, filename=%s\n",__FUNCTION__,__LINE__, wrap, xsize, ysize, filename);
+    // int i, j, plane_idx = 0;
+    int i;
+printf("[%s,%d]: wrap=%d, xsize=%d, ysize=%d, filename=%s\n",__FUNCTION__,__LINE__, *wrap, xsize, ysize, filename);
     f = fopen(filename,"w");
 //    fprintf(f, "P5\n%d %d\n%d\n", xsize, ysize, 255);
 
@@ -50,7 +51,7 @@ printf("[%s,%d]: wrap=%d, xsize=%d, ysize=%d, filename=%s\n",__FUNCTION__,__LINE
     unsigned char *v = buf[2];
     int y_linesize = wrap[0];
     int u_linesize = wrap[1];
-    int v_linesize = wrap[2];
+    // int v_linesize = wrap[2];
 
     fwrite(y, 1, y_linesize*ysize, f);
     for (i = 0; i < ysize * u_linesize; i++) {
@@ -144,7 +145,7 @@ int main(int argc, char **argv)
 	/* find the video decoder: ie: h264_v4l2m2m */
 	codec = avcodec_find_decoder_by_name("h264");  // h264_omx
 	if (!codec) {
-		err("Codec not found\n");
+		fprintf(stderr,"Codec not found\n");
 		exit(1);
 	}
 
