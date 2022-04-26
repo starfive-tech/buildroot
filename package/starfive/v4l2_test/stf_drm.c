@@ -132,6 +132,7 @@ static struct drm_dev_t *drm_find_dev(int fd, uint32_t width, uint32_t height)
     return dev_head;
 }
 
+#if 0
 static void drm_setup_buffer(int fd, struct drm_dev_t *dev,
         int width, int height,
         struct drm_buffer_t *buffer, int map, int export)
@@ -182,6 +183,7 @@ static void drm_setup_buffer(int fd, struct drm_dev_t *dev,
 
     LOG(STF_LEVEL_TRACE, "Exit\n");
 }
+#endif
 
 static uint32_t drm_get_bpp_from_drm(uint32_t drmfmt)
 {
@@ -331,6 +333,7 @@ static int drm_setup_buffer2(int fd, struct drm_dev_t *dev,
     //         dev->bufs[i].bo_handle, &dev->bufs[i].fb_id);
 }
 
+#if 0
 static void drm_setup_dummy(int fd, struct drm_dev_t *dev, int map, int export)
 {
     int i;
@@ -346,6 +349,7 @@ static void drm_setup_dummy(int fd, struct drm_dev_t *dev, int map, int export)
     LOG(STF_LEVEL_INFO, "DRM: buffer pitch = %d bytes\n", dev->pitch);
     LOG(STF_LEVEL_TRACE, "Exit\n");
 }
+#endif
 
 static void drm_setup_fb(int fd, struct drm_dev_t *dev, int map, int export)
 {

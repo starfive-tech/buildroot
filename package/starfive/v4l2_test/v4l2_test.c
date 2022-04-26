@@ -451,6 +451,7 @@ static int frameRead(void)
     return 1;
 }
 
+#if 0
 /**
  *  mainloop_select: read frames with select() and process them
  */
@@ -499,6 +500,7 @@ static void mainloop_select(void)
         }
     }
 }
+#endif
 
 static void page_flip_handler(int fd, unsigned int frame,
             unsigned int sec, unsigned int usec,
