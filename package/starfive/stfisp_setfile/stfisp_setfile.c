@@ -729,6 +729,7 @@ static const regval_t isp_dump_1080p_reg_config_list[] = {
     {0x00000000, 0x00000001, 0, 0},
 };
 
+#if 0
 static const regval_t isp_imx219_reg_config_list[] = {
     {0x00000014, 0x0000000D, 0, 0},
     // {0x00000018, 0x000011BB, 0, 0},
@@ -799,6 +800,7 @@ static const regval_t isp_imx219_reg_config_list[] = {
     {0x00000008, 0x0002000A, 0, 0},
     {0x00000000, 0x00000001, 0, 0},
 };
+#endif
 
 const struct reg_table isp_1920_1080_settings[] = {
     {isp_1080p_reg_config_list,
