@@ -39,27 +39,7 @@
          break;
 --- a/omx/gstomxvideo.c
 +++ b/omx/gstomxvideo.c
-@@ -47,10 +47,19 @@
-     case OMX_COLOR_FormatYUV420PackedPlanar:
-       format = GST_VIDEO_FORMAT_I420;
-       break;
-+#ifdef USE_OMX_TARGET_STARFIVE
-+    case OMX_COLOR_FormatYUV420SemiPlanar:
-+      format = GST_VIDEO_FORMAT_NV12;
-+      break;
-+    case OMX_COLOR_FormatYUV420PackedSemiPlanar:
-+      format = GST_VIDEO_FORMAT_NV21;
-+      break;
-+#else
-     case OMX_COLOR_FormatYUV420SemiPlanar:
-     case OMX_COLOR_FormatYUV420PackedSemiPlanar:
-       format = GST_VIDEO_FORMAT_NV12;
-       break;
-+#endif
-     case OMX_COLOR_FormatYUV422SemiPlanar:
-       format = GST_VIDEO_FORMAT_NV16;
-       break;
-@@ -93,6 +102,14 @@
+@@ -93,6 +93,17 @@
        format = GST_VIDEO_FORMAT_NV16_10LE32;
        break;
  #pragma GCC diagnostic pop
@@ -70,6 +50,9 @@
 +      break;
 +    case OMX_COLOR_FormatYUV444Interleaved:
 +      format = GST_VIDEO_FORMAT_Y444;
++      break;
++    case OMX_COLOR_FormatYVU420SemiPlanar:
++      format = GST_VIDEO_FORMAT_NV21;
 +      break;
  #endif
      default:

@@ -4,12 +4,12 @@ Date: Mon, 22 Nov 2021 15:28:17 +0800
 Subject: [PATCH] add FbPreview support YUYV/YVYU display
 
 ---
- preview/fb_preview.cpp | 123 +++++++++++++++++++++++++++++++++++------
- preview/preview.cpp    |  15 +++--
- 2 files changed, 118 insertions(+), 20 deletions(-)
+ preview/fb_preview.cpp | 119 ++++++++++++++++++++++++++++++++++++-----
+ preview/preview.cpp    |  15 ++++--
+ 2 files changed, 118 insertions(+), 16 deletions(-)
 
 diff --git a/preview/fb_preview.cpp b/preview/fb_preview.cpp
-index 1a88b79..0b42ad1 100644
+index 680c7b0..48426f6 100644
 --- a/preview/fb_preview.cpp
 +++ b/preview/fb_preview.cpp
 @@ -44,6 +44,7 @@ enum COLOR_FORMAT {
@@ -103,31 +103,21 @@ index 1a88b79..0b42ad1 100644
  	if (-1 == ioctl(g_stfbc_fd, FBIOPAN_GET_PP_MODE, &pp_info[0]))
  		throw std::runtime_error("Error reading variable information.");
  
-@@ -217,9 +252,6 @@ int FbPreview::NVResize(unsigned char *inBuf,
- 	int fb_Ypos, fb_Upos, fb_Vpos;
- 	int width, height;
- 	int x_offset, y_offset;
--	unsigned int start_timems;
--	unsigned int end_timems;
--	struct timeval ts_start, ts_end;
- 
- 	width = imgWidth > g_vinfo.xres ? g_vinfo.xres : imgWidth;
- 	height = imgHeight > g_vinfo.yres ? g_vinfo.yres : imgHeight;
-@@ -264,15 +296,74 @@ int FbPreview::NVResize(unsigned char *inBuf,
+@@ -259,14 +294,74 @@ int FbPreview::NVResize(unsigned char *inBuf,
  	return 0;
  }
  
 +int FbPreview::YUYVResize(unsigned char *inBuf,
 +		unsigned char *outBuf, int imgWidth, int imgHeight)
 +{
-+	int rows, cols;
++	int rows;
 +	unsigned char *OutNVdata, *InNVdata;
 +	int Ypos, fb_Ypos;
 +	int width, height;
 +	int x_offset, y_offset;
 +
-+	width = imgWidth > g_vinfo.xres ? g_vinfo.xres : imgWidth;
-+	height = imgHeight > g_vinfo.yres ? g_vinfo.yres : imgHeight;
++	width = imgWidth > (int) g_vinfo.xres ? g_vinfo.xres : imgWidth;
++	height = imgHeight > (int) g_vinfo.yres ? g_vinfo.yres : imgHeight;
 +	x_offset = (g_vinfo.xres - width) / 2;
 +	y_offset = (g_vinfo.yres - height) / 2;
 +	x_offset &= ~0x1;
@@ -135,7 +125,7 @@ index 1a88b79..0b42ad1 100644
 +	InNVdata = inBuf;
 +	OutNVdata = tmpBuf;
 +
-+	if (imgWidth == g_vinfo.xres) {
++	if (imgWidth == (int) g_vinfo.xres) {
 +		fb_Ypos = y_offset * g_vinfo.xres + x_offset;
 +		memcpy(&tmpBuf[fb_Ypos], inBuf, imgWidth * height * 2);
 +		memcpy(&outBuf[fb_Ypos], &tmpBuf[fb_Ypos], imgWidth * height * 2);
@@ -158,20 +148,19 @@ index 1a88b79..0b42ad1 100644
 +
  void FbPreview::Show(int fd, libcamera::Span<uint8_t> span, int width, int height, int stride)
  {
--	int imgsize = stride * height + stride * height / 2;
  	auto startTime = std::chrono::high_resolution_clock::now();
 +	int size_valid = 0;
 +	int imgsize;
 +
 +	if (pixformat == COLOR_YUV420_NV21 || pixformat == COLOR_YUV420_NV12) {
 +		imgsize = stride * height + stride * height / 2;
-+		if (imgsize == span.size()) {
++		if (imgsize == (int) span.size()) {
 +			size_valid = 1;
 +			NVResize(span.data(), g_fb_buf, width, height);
 +		}
 +	} else if (pixformat == COLOR_YUV422_YVYU || pixformat == COLOR_YUV422_YUYV) {
 +		imgsize = stride * height;
-+		if (imgsize == span.size()) {
++		if (imgsize == (int) span.size()) {
 +			size_valid = 1;
 +			YUYVResize(span.data(), g_fb_buf, width, height);
 +		}
@@ -220,5 +209,5 @@ index 0086d83..17118d4 100644
  		}
  	}
 -- 
-2.17.1
+2.25.1
 
