@@ -3,6 +3,7 @@
  * Copyright (C) 2021 StarFive Technology Co., Ltd.
  */
 #include "common.h"
+#include "stf_log.h"
 
 static int g_screen_width = 0;
 static int g_screen_height = 0;
@@ -74,7 +75,7 @@ int yuyv_resize(const uint8_t *inBuf, uint8_t *outBuf, int imgWidth, int imgHeig
         gettimeofday(&ts_end, NULL);
         start_timems = ts_start.tv_sec * 1000 + ts_start.tv_usec/1000;
         end_timems = ts_end.tv_sec * 1000 + ts_end.tv_usec/1000;
-        // printf("%s: copy use %dms, sizeof(int) = %d\n", __func__, end_timems - start_timems, sizeof(int));
+        LOG(STF_LEVEL_TRACE, "%s: copy use %dms, sizeof(int) = %d\n", __func__, end_timems - start_timems, sizeof(int));
         //free(tmp);
         return 0;
     }
@@ -92,7 +93,7 @@ int yuyv_resize(const uint8_t *inBuf, uint8_t *outBuf, int imgWidth, int imgHeig
     gettimeofday(&ts_end, NULL);
     start_timems = ts_start.tv_sec * 1000000 + ts_start.tv_usec;
     end_timems = ts_end.tv_sec * 1000000 + ts_end.tv_usec;
-    // printf("%s: convert use %dus\n", __func__, end_timems - start_timems);
+    LOG(STF_LEVEL_TRACE, "%s: convert use %dus\n", __func__, end_timems - start_timems);
 
     gettimeofday(&ts_start, NULL);
 
@@ -101,7 +102,7 @@ int yuyv_resize(const uint8_t *inBuf, uint8_t *outBuf, int imgWidth, int imgHeig
     gettimeofday(&ts_end, NULL);
     start_timems = ts_start.tv_sec * 1000 + ts_start.tv_usec/1000;
     end_timems = ts_end.tv_sec * 1000 + ts_end.tv_usec/1000;
-    // printf("%s: copy use %dms, sizeof(int) = %d\n", __func__, end_timems - start_timems, sizeof(int));
+    LOG(STF_LEVEL_TRACE, "%s: copy use %dms, sizeof(int) = %d\n", __func__, end_timems - start_timems, sizeof(int));
 
     //free(tmp);
     return 0;
@@ -166,7 +167,7 @@ int convert_yuyv_to_nv12(const uint8_t *inBuf, uint8_t *outBuf, int imgWidth, in
     gettimeofday(&ts_end, NULL);
     start_timems = ts_start.tv_sec * 1000000 + ts_start.tv_usec;
     end_timems = ts_end.tv_sec * 1000000 + ts_end.tv_usec;
-    // printf("%s: convert use %dus\n", __func__, end_timems - start_timems);
+    LOG(STF_LEVEL_TRACE, "%s: convert use %dus\n", __func__, end_timems - start_timems);
 
     gettimeofday(&ts_start, NULL);
 
@@ -175,7 +176,7 @@ int convert_yuyv_to_nv12(const uint8_t *inBuf, uint8_t *outBuf, int imgWidth, in
     gettimeofday(&ts_end, NULL);
     start_timems = ts_start.tv_sec * 1000 + ts_start.tv_usec/1000;
     end_timems = ts_end.tv_sec * 1000 + ts_end.tv_usec/1000;
-    // printf("%s: copy use %dms, sizeof(int) = %d\n", __func__, end_timems - start_timems, sizeof(int));
+    LOG(STF_LEVEL_TRACE, "%s: copy use %dms, sizeof(int) = %d\n", __func__, end_timems - start_timems, sizeof(int));
 
     //free(tmp);
     return 0;
@@ -270,7 +271,7 @@ int convert_nv21_to_nv12(const uint8_t *inBuf, uint8_t *outBuf,
     gettimeofday(&ts_end, NULL);
     start_timems = ts_start.tv_sec * 1000000 + ts_start.tv_usec;
     end_timems = ts_end.tv_sec * 1000000 + ts_end.tv_usec;
-    // printf("%s: convert use %dus\n", __func__, end_timems - start_timems);
+    LOG(STF_LEVEL_TRACE, "%s: convert use %dus\n", __func__, end_timems - start_timems);
 
     gettimeofday(&ts_start, NULL);
 
@@ -279,7 +280,7 @@ int convert_nv21_to_nv12(const uint8_t *inBuf, uint8_t *outBuf,
     gettimeofday(&ts_end, NULL);
     start_timems = ts_start.tv_sec * 1000 + ts_start.tv_usec/1000;
     end_timems = ts_end.tv_sec * 1000 + ts_end.tv_usec/1000;
-    // printf("%s: copy use %dms, sizeof(int) = %d\n", __func__, end_timems - start_timems, sizeof(int));
+    LOG(STF_LEVEL_TRACE, "%s: copy use %dms, sizeof(int) = %d\n", __func__, end_timems - start_timems, sizeof(int));
 
     //free(tmp);
     return 0;
@@ -372,7 +373,7 @@ int convert_nv21_to_rgb(const uint8_t *inBuf, uint8_t *outBuf, int imgWidth, int
     gettimeofday(&ts_end, NULL);
     start_timems = ts_start.tv_sec * 1000000 + ts_start.tv_usec;
     end_timems = ts_end.tv_sec * 1000000 + ts_end.tv_usec;
-    // printf("%s: convert use %dus\n", __func__, end_timems - start_timems);
+    LOG(STF_LEVEL_TRACE, "%s: convert use %dus\n", __func__, end_timems - start_timems);
 
     gettimeofday(&ts_start, NULL);
 
@@ -390,7 +391,7 @@ int convert_nv21_to_rgb(const uint8_t *inBuf, uint8_t *outBuf, int imgWidth, int
     gettimeofday(&ts_end, NULL);
     start_timems = ts_start.tv_sec * 1000 + ts_start.tv_usec/1000;
     end_timems = ts_end.tv_sec * 1000 + ts_end.tv_usec/1000;
-    // printf("%s: copy use %dms, sizeof(int) = %d\n", __func__, end_timems - start_timems, sizeof(int));
+    LOG(STF_LEVEL_TRACE, "%s: copy use %dms, sizeof(int) = %d\n", __func__, end_timems - start_timems, sizeof(int));
 
     free(tmp);
     return 0;
@@ -595,7 +596,7 @@ int convert_rgb565_to_nv12(const uint8_t *inBuf, uint8_t *outBuf, int imgWidth, 
     clock_gettime(CLOCK_MONOTONIC, &ts_end);
     start_timems = ts_start.tv_sec * 1000 + ts_start.tv_nsec/1000000;
     end_timems = ts_end.tv_sec * 1000 + ts_end.tv_nsec/1000000;
-    // printf("%s: convert use %dms\n", __func__, end_timems - start_timems);
+    LOG(STF_LEVEL_TRACE, "%s: convert use %dms\n", __func__, end_timems - start_timems);
 
     clock_gettime(CLOCK_MONOTONIC, &ts_start);
 
@@ -604,7 +605,7 @@ int convert_rgb565_to_nv12(const uint8_t *inBuf, uint8_t *outBuf, int imgWidth, 
     clock_gettime(CLOCK_MONOTONIC, &ts_end);
     start_timems = ts_start.tv_sec * 1000 + ts_start.tv_nsec/1000000;
     end_timems = ts_end.tv_sec * 1000 + ts_end.tv_nsec/1000000;
-    // printf("%s: use %dms\n", __func__, end_timems - start_timems);
+    LOG(STF_LEVEL_TRACE, "%s: use %dms\n", __func__, end_timems - start_timems);
 
     free(tmp);
     return 0;
@@ -689,7 +690,7 @@ int convert_yuyv_to_rgb(const uint8_t *inBuf, uint8_t *outBuf, int imgWidth, int
     clock_gettime(CLOCK_MONOTONIC, &ts_end);
     start_timems = ts_start.tv_sec * 1000 + ts_start.tv_nsec/1000000;
     end_timems = ts_end.tv_sec * 1000 + ts_end.tv_nsec/1000000;
-    // printf("%s: convert use %dms\n", __func__, end_timems - start_timems);
+    LOG(STF_LEVEL_TRACE, "%s: convert use %dms\n", __func__, end_timems - start_timems);
 
     clock_gettime(CLOCK_MONOTONIC, &ts_start);
 
@@ -698,7 +699,7 @@ int convert_yuyv_to_rgb(const uint8_t *inBuf, uint8_t *outBuf, int imgWidth, int
     clock_gettime(CLOCK_MONOTONIC, &ts_end);
     start_timems = ts_start.tv_sec * 1000 + ts_start.tv_nsec/1000000;
     end_timems = ts_end.tv_sec * 1000 + ts_end.tv_nsec/1000000;
-    // printf("%s: use %dms\n", __func__, end_timems - start_timems);
+    LOG(STF_LEVEL_TRACE, "%s: use %dms\n", __func__, end_timems - start_timems);
 
     free(tmp);
     return 0;
