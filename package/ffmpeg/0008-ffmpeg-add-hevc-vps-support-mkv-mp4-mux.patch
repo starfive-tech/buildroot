@@ -1,5 +1,5 @@
 From e71dfa49e89759b1c04541a7d4303d28a65142aa Mon Sep 17 00:00:00 2001
-From: wanglm1125 <wanglm1125@thundersoft.com>
+From: sw.multimedia <sw.multimedia@starfivetech.com>
 Date: Fri, 1 Apr 2022 13:39:39 +0800
 Subject: [PATCH] ffmpeg add hevc vps support mkv/mp4 mux
 

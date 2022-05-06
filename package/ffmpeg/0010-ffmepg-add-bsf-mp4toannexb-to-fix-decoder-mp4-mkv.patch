@@ -1,0 +1,33 @@
+From 50db226a6c6573e450cc5f747718f72f5c219021 Mon Sep 17 00:00:00 2001
+sw.multimedia <sw.multimedia@starfivetech.com>
+Date: Mon, 25 Apr 2022 19:22:45 +0800
+Subject: [PATCH] ffmepg add bsf mp4toannexb to fix decoder mp4/mkv issue
+
+---
+ omxdec.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/omxdec.c b/omxdec.c
+index 0ccc1dc..e7db494 100755
+--- a/omxdec.c
++++ b/omxdec.c
+@@ -931,6 +931,7 @@ AVCodec ff_h264_omx_decoder = {
+     .capabilities     = AV_CODEC_CAP_DELAY,
+     .caps_internal    = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
+     .priv_class       = &omx_h264dec_class,
++    .bsfs             = "h264_mp4toannexb",
+ };
+ 
+ static const AVClass omx_hevcdec_class = {
+@@ -951,7 +952,8 @@ AVCodec ff_hevc_omx_decoder = {
+     .profiles         = NULL_IF_CONFIG_SMALL(ff_hevc_profiles),
+     .capabilities     = AV_CODEC_CAP_DELAY,
+     .caps_internal    = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
+     .priv_class       = &omx_hevcdec_class,
++    .bsfs             = "hevc_mp4toannexb",
+ };
+ 
+ static const AVClass omx_mjpegdec_class = {
+-- 
+2.17.1
+
