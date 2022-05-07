@@ -1,16 +1,16 @@
-From 50db226a6c6573e450cc5f747718f72f5c219021 Mon Sep 17 00:00:00 2001
-sw.multimedia <sw.multimedia@starfivetech.com>
+From 62756ccf38044c4c042d800be7b46e031ef95234 Mon Sep 17 00:00:00 2001
+From: "sw.multimedia" <sw.multimedia@starfivetech.com>
 Date: Mon, 25 Apr 2022 19:22:45 +0800
 Subject: [PATCH] ffmepg add bsf mp4toannexb to fix decoder mp4/mkv issue
 
 ---
- omxdec.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ libavcodec/omxdec.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/omxdec.c b/omxdec.c
-index 0ccc1dc..e7db494 100755
---- a/omxdec.c
-+++ b/omxdec.c
+diff --git a/libavcodec/omxdec.c b/libavcodec/omxdec.c
+index 0ccc1dc..7bb1d27 100755
+--- a/libavcodec/omxdec.c
++++ b/libavcodec/omxdec.c
 @@ -931,6 +931,7 @@ AVCodec ff_h264_omx_decoder = {
      .capabilities     = AV_CODEC_CAP_DELAY,
      .caps_internal    = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
@@ -19,8 +19,7 @@ index 0ccc1dc..e7db494 100755
  };
  
  static const AVClass omx_hevcdec_class = {
-@@ -951,7 +952,8 @@ AVCodec ff_hevc_omx_decoder = {
-     .profiles         = NULL_IF_CONFIG_SMALL(ff_hevc_profiles),
+@@ -952,6 +953,7 @@ AVCodec ff_hevc_omx_decoder = {
      .capabilities     = AV_CODEC_CAP_DELAY,
      .caps_internal    = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
      .priv_class       = &omx_hevcdec_class,
@@ -29,5 +28,5 @@ index 0ccc1dc..e7db494 100755
  
  static const AVClass omx_mjpegdec_class = {
 -- 
-2.17.1
+2.25.1
 
