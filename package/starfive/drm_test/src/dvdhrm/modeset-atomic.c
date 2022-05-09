@@ -1134,7 +1134,7 @@ static void modeset_cleanup(int fd)
 
 int main(int argc, char **argv)
 {
-	int ret, fd;
+	int ret, fd = 0;
 	const char *card;
 
 	/* check which DRM device to open */
