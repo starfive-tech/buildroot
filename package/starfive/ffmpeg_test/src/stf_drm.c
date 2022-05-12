@@ -328,7 +328,7 @@ static int drm_setup_buffer2(int fd, struct drm_dev_t *dev,
     return ret;
 }
 
-static void drm_setup_dummy(int fd, struct drm_dev_t *dev, int map, int export)
+__attribute__((unused))static void drm_setup_dummy(int fd, struct drm_dev_t *dev, int map, int export)
 {
     int i;
 

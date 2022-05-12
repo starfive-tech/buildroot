@@ -35,7 +35,7 @@ static const enum_value_t g_disp_values[] = {
     { STF_DISP_DRM,  "DRM"}
 };
 
-static const enum_value_t g_iomthd_values[] = {
+__attribute__((unused))static const enum_value_t g_iomthd_values[] = {
     { IO_METHOD_MMAP,    "MMAP"},
     { IO_METHOD_USERPTR, "USERPTR"},
     { IO_METHOD_DMABUF,  "DMABUF"},
@@ -64,7 +64,7 @@ typedef struct {
     int dmabufs[BUFCOUNT];  // for dmabuf use, mmap not use it
 
     AVFormatContext* format_ctx;
-    AVCodecContext* vcodec_ctx;
+    AVCodecParameters* vcodec_ctx;
     AVPacket* packet;
 } ConfigParam_t;
 ConfigParam_t *gp_cfg_param = NULL;
@@ -361,7 +361,7 @@ int main(int argc, char **argv)
 {
     AVFormatContext* fmtCtx = NULL;
     AVInputFormat* inputFmt;
-    AVCodecContext* pCodecCtx;
+    AVCodecParameters* pCodecCtx;
     AVCodec* pCodec;
     int videoindex, i;
     char str_data[32] = {0};
@@ -376,7 +376,7 @@ int main(int argc, char **argv)
 
     // init ffmpeg env
     av_log_set_level(AV_LOG_TRACE);
-    avcodec_register_all();
+    //avcodec_register_all();
     avdevice_register_all();
 
     inputFmt = av_find_input_format(FFMPEG_INPUT_NAME);
@@ -414,7 +414,7 @@ int main(int argc, char **argv)
 
     videoindex = -1;
     for (i = 0; i < fmtCtx->nb_streams; i++) {
-        if (fmtCtx->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
+        if (fmtCtx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
             videoindex = i;
             break;
         }
@@ -424,11 +424,15 @@ int main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
 
-    pCodecCtx = fmtCtx->streams[videoindex]->codec;
+    pCodecCtx = fmtCtx->streams[videoindex]->codecpar;
     pCodec = avcodec_find_decoder(pCodecCtx->codec_id);
+    if (!pCodec) {
+        fprintf(stderr,"Codec not found\n");
+        exit(1);
+    }
     LOG(STF_LEVEL_INFO, "picture width   =  %d \n", pCodecCtx->width);
     LOG(STF_LEVEL_INFO, "picture height  =  %d \n", pCodecCtx->height);
-    LOG(STF_LEVEL_INFO, "Pixel   format  =  %d \n", pCodecCtx->pix_fmt);
+    LOG(STF_LEVEL_INFO, "Pixel   format  =  %d \n", pCodecCtx->format);
     LOG(STF_LEVEL_INFO, "codec_id  =  %d \n", pCodecCtx->codec_id); // AV_CODEC_ID_RAWVIDEO
 
     if (gp_cfg_param->out_file && !gp_cfg_param->out_fp) {
@@ -446,7 +450,7 @@ int main(int argc, char **argv)
     if (STF_DISP_DRM == gp_cfg_param->disp_type) {
         stf_drm_open(&gp_cfg_param->drm_param, DRM_DEVICE_NAME, gp_cfg_param->io_mthd);
         stf_drm_init(&gp_cfg_param->drm_param, gp_cfg_param->vcodec_ctx->width,
-                gp_cfg_param->vcodec_ctx->height, gp_cfg_param->vcodec_ctx->pix_fmt,
+                gp_cfg_param->vcodec_ctx->height, gp_cfg_param->vcodec_ctx->format,
                 gp_cfg_param->io_mthd, gp_cfg_param->dmabufs,
                 sizeof(gp_cfg_param->dmabufs) / sizeof(gp_cfg_param->dmabufs[0]));
     }
@@ -459,7 +463,7 @@ int main(int argc, char **argv)
         fclose(gp_cfg_param->out_fp);
     }
     if (gp_cfg_param->packet) {
-        av_free_packet(gp_cfg_param->packet);
+        av_packet_unref(gp_cfg_param->packet);
     }
     if (gp_cfg_param->format_ctx) {
         avformat_close_input(&gp_cfg_param->format_ctx);
