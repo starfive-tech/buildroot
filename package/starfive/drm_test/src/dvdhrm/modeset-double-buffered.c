@@ -435,7 +435,7 @@ static void modeset_destroy_fb(int fd, struct modeset_buf *buf)
 
 int main(int argc, char **argv)
 {
-	int ret, fd;
+	int ret, fd = 0;
 	const char *card;
 	struct modeset_dev *iter;
 	struct modeset_buf *buf;
