@@ -2576,4 +2576,5 @@ endmenu
 menu "starfive packages"
 	source "package/starfive/Config.in"
 endmenu
+
 endmenu
