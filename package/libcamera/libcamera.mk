@@ -5,14 +5,16 @@
 ################################################################################
 
 LIBCAMERA_SITE = https://git.linuxtv.org/libcamera.git
-LIBCAMERA_VERSION = 40f5fddca7f774944a53f58eeaebc4db79c373d8
+# LIBCAMERA_VERSION = e59713c68678f3eb6b6ebe97cabdc88c7042567f
+# LIBCAMERA_VERSION = 06e53199c2563105030bda4c72752b853da7edc8
+LIBCAMERA_VERSION = d6f4abeead1e86d89dc376e8a303849bdb98d5fd
 LIBCAMERA_SITE_METHOD = git
 LIBCAMERA_DEPENDENCIES = \
 	host-openssl \
 	host-pkgconf \
-	host-python3-jinja2 \
-	host-python3-ply \
 	host-python3-pyyaml \
+	host-python-jinja2 \
+	host-python-ply \
 	gnutls
 LIBCAMERA_CONF_OPTS = \
 	-Dandroid=disabled \
@@ -58,15 +60,9 @@ LIBCAMERA_PIPELINES-$(BR2_PACKAGE_LIBCAMERA_PIPELINE_RKISP1) += rkisp1
 LIBCAMERA_PIPELINES-$(BR2_PACKAGE_LIBCAMERA_PIPELINE_SIMPLE) += simple
 LIBCAMERA_PIPELINES-$(BR2_PACKAGE_LIBCAMERA_PIPELINE_UVCVIDEO) += uvcvideo
 LIBCAMERA_PIPELINES-$(BR2_PACKAGE_LIBCAMERA_PIPELINE_VIMC) += vimc
+LIBCAMERA_PIPELINES-$(BR2_PACKAGE_LIBCAMERA_PIPELINE_STARFIVE) += starfive
 
 LIBCAMERA_CONF_OPTS += -Dpipelines=$(subst $(space),$(comma),$(LIBCAMERA_PIPELINES-y))
-
-ifeq ($(BR2_PACKAGE_LIBCAMERA_COMPLIANCE),y)
-LIBCAMERA_DEPENDENCIES += gtest libevent
-LIBCAMERA_CONF_OPTS += -Dlc-compliance=enabled
-else
-LIBCAMERA_CONF_OPTS += -Dlc-compliance=disabled
-endif
 
 # gstreamer-video-1.0, gstreamer-allocators-1.0
 ifeq ($(BR2_PACKAGE_GSTREAMER1)$(BR2_PACKAGE_GST1_PLUGINS_BASE),yy)
@@ -92,11 +88,18 @@ ifeq ($(BR2_PACKAGE_HAS_UDEV),y)
 LIBCAMERA_DEPENDENCIES += udev
 endif
 
-ifeq ($(BR2_PACKAGE_LTTNG_LIBUST),y)
-LIBCAMERA_CONF_OPTS += -Dtracing=enabled
-LIBCAMERA_DEPENDENCIES += lttng-libust
-else
-LIBCAMERA_CONF_OPTS += -Dtracing=disabled
+ifeq ($(BR2_PACKAGE_LIBEVENT),y)
+LIBCAMERA_DEPENDENCIES += libevent
 endif
+
+ifeq ($(BR2_PACKAGE_LIBCAMERA_PIPELINE_STARFIVE),y)
+LIBCAMERA_DEPENDENCIES += yaml-cpp
+endif
+
+define LIBCAMERA_HOOK_EXTRA
+	mkdir -p $(TARGET_DIR)/etc/starfive
+	$(INSTALL) -D -m 0644 $(@D)/src/libcamera/pipeline/starfive/sensors_pipeline.yaml $(TARGET_DIR)/etc/starfive/sensors_pipeline.yaml
+endef
+LIBCAMERA_POST_INSTALL_TARGET_HOOKS = LIBCAMERA_HOOK_EXTRA
 
 $(eval $(meson-package))
