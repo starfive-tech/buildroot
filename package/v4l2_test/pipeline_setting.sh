@@ -98,6 +98,8 @@ case $1 in
 				case $2 in
 					VIN)
 						echo "csiphy0 CSIRX0 vin 使能pipeline:"
+						media-ctl -vl "'stf_csiphy0':1 -> 'stf_csi0':0 [1]"
+						media-ctl -vl "'stf_csi0':1 -> 'stf_vin0_wr':0 [1]"
 						;;
 					ISP0)
 						echo "csiphy0 CSIRX0 ISP0 使能pipeline:"
@@ -139,6 +141,8 @@ case $1 in
 				case $2 in
 					VIN)
 						echo "csiphy0 CSIRX0 vin 关闭pipeline:"
+						media-ctl -vl "'stf_csiphy0':1 -> 'stf_csi0':0 [0]"
+						media-ctl -vl "'stf_csi0':1 -> 'stf_vin0_wr':0 [0]"
 						;;
 					ISP0)
 						echo "csiphy0 CSIRX0 ISP0 关闭pipeline:"
