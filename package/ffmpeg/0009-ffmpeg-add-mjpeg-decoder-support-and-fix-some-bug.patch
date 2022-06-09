@@ -68,22 +68,22 @@ index 86e32a8..023db9c 100644
                      break;
 -            } else {
 +            } else if (avctx->codec->id == AV_CODEC_ID_HEVC) {
-++                // For H.265, the extradata can be returned in two separate buffers
-++                // (the videocore encoder on raspberry pi does this);
-++                // therefore check that we have got both SPS and PPS before continuing.
-++                int nals[128] = { 0 };
-++                int i;
-++                for (i = 0; i + 4 < avctx->extradata_size; i++) {
-++                     if (!avctx->extradata[i + 0] &&
-++                         !avctx->extradata[i + 1] &&
-++                         !avctx->extradata[i + 2] &&
-++                         avctx->extradata[i + 3] == 1) {
-++                         nals[(avctx->extradata[i + 4] & 0x7E) >> 1]++;
-++                     }
-++                }
-++                if (nals[HEVC_NAL_SPS] && nals[HEVC_NAL_PPS] && nals[HEVC_NAL_VPS])
-++                    break;
-++		} else {
++                // For H.265, the extradata can be returned in two separate buffers
++                // (the videocore encoder on raspberry pi does this);
++                // therefore check that we have got both SPS and PPS before continuing.
++                int nals[128] = { 0 };
++                int i;
++                for (i = 0; i + 4 < avctx->extradata_size; i++) {
++                     if (!avctx->extradata[i + 0] &&
++                         !avctx->extradata[i + 1] &&
++                         !avctx->extradata[i + 2] &&
++                         avctx->extradata[i + 3] == 1) {
++                         nals[(avctx->extradata[i + 4] & 0x7E) >> 1]++;
++                     }
++                }
++                if (nals[HEVC_NAL_SPS] && nals[HEVC_NAL_PPS] && nals[HEVC_NAL_VPS])
++                    break;
++		} else {
                  if (avctx->extradata_size > 0)
                      break;
              }
