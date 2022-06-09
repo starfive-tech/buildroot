@@ -8,6 +8,7 @@ config BR2_PACKAGE_LIBCAMERA_APPS
 	select BR2_PACKAGE_TIFF
 	select BR2_PACKAGE_LIBEXIF
 	select BR2_PACKAGE_LIBYUV
+	select BR2_PACKAGE_LIBPNG
 	help
 	  libcamera-apps provides a software stack to support
 	  complex devices that need heavy hardware image
