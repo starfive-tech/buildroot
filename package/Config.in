@@ -2573,9 +2573,7 @@ menu "Text editors and viewers"
 endmenu
 
 
-
-menu "v4l2 test"
-       source "package/v4l2_test/Config.in"
-       source "package/v4lutils/Config.in"
+menu "starfive packages"
+	source "package/starfive/Config.in"
 endmenu
 endmenu

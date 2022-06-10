@@ -1,56 +1,73 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <assert.h>
-#include <getopt.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <errno.h>
-#include <malloc.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <sys/time.h>
-#include <time.h>
-#include <sys/mman.h>
-#include <sys/ioctl.h>
-#include <asm/types.h>
-#include <signal.h>
-#include <stdint.h>
-#include <inttypes.h>
-#include <linux/fb.h>
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Copyright (C) 2021 StarFive Technology Co., Ltd.
+ */
+#include "common.h"
 
-extern struct fb_var_screeninfo vinfo;
-extern struct fb_fix_screeninfo finfo;
-extern int screensize;
+static int g_screen_width = 0;
+static int g_screen_height = 0;
+static int g_screen_bpp = 0;
+static int g_screen_size = 0;
+static int g_screen_distype = 0; // STF_DISP_FB or STF_DISP_DRM
 
-int yuyv_resize(unsigned char *inBuf, unsigned char *outBuf, int imgWidth, int imgHeight)
+void update_videocvt_param(int distype, int scr_width, int scr_height,
+        int scr_bpp, int scr_size)
 {
-    int rows ,cols;   /* 行列标志 */
-    unsigned char *YUVindata, *YUVoutdata;    /* YUV和RGB数据指针 */
-    int YUVinpos;    /* Y U V在数据缓存中的偏移 */
-    unsigned int i = 0;
+    g_screen_distype = distype;
+    g_screen_width = scr_width;
+    g_screen_height = scr_height;
+    g_screen_bpp = scr_bpp;
+    g_screen_size = scr_size;
+}
+
+int yuyv_resize(const uint8_t *inBuf, uint8_t *outBuf, int imgWidth, int imgHeight)
+{
+    int rows;
+    const uint8_t *YUVindata;
+    uint8_t *YUVoutdata;    /* YUV and RGB pointer */
+    int YUVinpos;    /* Y U V offset */
     int width, height;
     int x_offset, y_offset;
-    unsigned char *tmp = malloc(screensize);
-    unsigned int start_timems;
-    unsigned int end_timems;
+    uint32_t start_timems;
+    uint32_t end_timems;
     struct timeval ts_start, ts_end;
+    static uint8_t *tmp = NULL;
 
     if (!tmp)
-        return -1;
+    {
+        tmp = malloc(g_screen_size);
+        if (tmp)
+        {
+            // for YUYV buffer, set it to black
+            for ( rows = 0; rows < g_screen_size; rows++)
+            {
+                if (rows == 0 || rows % 2 == 0)
+                {
+                    //even is Y
+                    tmp[rows] = 0;
+                }
+                else
+                {
+                    //odd is U or V
+                    tmp[rows] = 128;
+                }
+            }
+        }
+    }
+    assert(tmp);
 
     gettimeofday(&ts_start, NULL);
 
-    width = imgWidth > vinfo.xres ? vinfo.xres : imgWidth;
-    height = imgHeight > vinfo.yres ? vinfo.yres : imgHeight;
-    x_offset = (vinfo.xres - width) / 2;
-    y_offset = (vinfo.yres - height) / 2;
+    width = imgWidth > g_screen_width ? g_screen_width : imgWidth;
+    height = imgHeight > g_screen_height ? g_screen_height : imgHeight;
+    x_offset = (g_screen_width - width) / 2;
+    y_offset = (g_screen_height - height) / 2;
 
     YUVindata = inBuf;
     YUVoutdata = tmp;
 
-    if (imgWidth == vinfo.xres) {
-        YUVinpos = (y_offset * vinfo.xres + x_offset) * 2;
+    if (imgWidth == g_screen_width) {
+        YUVinpos = (y_offset * g_screen_width + x_offset) * 2;
         memcpy(&tmp[YUVinpos], inBuf, imgWidth * height * 2);
         memcpy(&outBuf[YUVinpos], &tmp[YUVinpos], imgWidth * height * 2);
         // memcpy(&outBuf[YUVinpos], inBuf, imgWidth * height * 2);
@@ -58,15 +75,15 @@ int yuyv_resize(unsigned char *inBuf, unsigned char *outBuf, int imgWidth, int i
         start_timems = ts_start.tv_sec * 1000 + ts_start.tv_usec/1000;
         end_timems = ts_end.tv_sec * 1000 + ts_end.tv_usec/1000;
         // printf("%s: copy use %dms, sizeof(int) = %d\n", __func__, end_timems - start_timems, sizeof(int));
-        free(tmp);
+        //free(tmp);
         return 0;
     }
 
-    /* 每个像素两个字节 */
+    /* two bytes for one pixels */
     for(rows = 0; rows < height; rows++)
     {
-        // vinfo.xres, vinfo.yres vinfo.bits_per_pixel
-        YUVoutdata = tmp + ((rows + y_offset) * vinfo.xres + x_offset) * 2;
+        // g_screen_width, g_screen_height g_screen_bpp
+        YUVoutdata = tmp + ((rows + y_offset) * g_screen_width + x_offset) * 2;
         YUVinpos = rows * imgWidth * 2;
 
         memcpy(YUVoutdata, &YUVindata[YUVinpos], imgWidth * 2);
@@ -79,53 +96,61 @@ int yuyv_resize(unsigned char *inBuf, unsigned char *outBuf, int imgWidth, int i
 
     gettimeofday(&ts_start, NULL);
 
-    memcpy(outBuf, tmp, screensize);
+    memcpy(outBuf, tmp, g_screen_size);
 
     gettimeofday(&ts_end, NULL);
     start_timems = ts_start.tv_sec * 1000 + ts_start.tv_usec/1000;
     end_timems = ts_end.tv_sec * 1000 + ts_end.tv_usec/1000;
     // printf("%s: copy use %dms, sizeof(int) = %d\n", __func__, end_timems - start_timems, sizeof(int));
 
-    free(tmp);
+    //free(tmp);
     return 0;
 
 }
 
-int convert_yuyv_to_nv12(unsigned char *inBuf, unsigned char *outBuf, int imgWidth, int imgHeight, int is_yuyv)
+int convert_yuyv_to_nv12(const uint8_t *inBuf, uint8_t *outBuf, int imgWidth, int imgHeight, int is_yuyv)
 {
-    int rows ,cols;   /* 行列标志 */
-    int y, u, v, r, g, b;   /* yuv rgb 相关分量 */
-    unsigned char *nv12data, *YUVdata;    /* YUV和RGB数据指针 */
-    int Ypos, Upos, Vpos;    /* Y U V在数据缓存中的偏移 */
-    int fb_Ypos, fb_Upos, fb_Vpos;    /* Y U V在数据缓存中的偏移 */
-    unsigned int i = 0;
+    int rows, cols;
+    const uint8_t *YUVdata;
+    uint8_t *nv12data;
+    int Ypos;
+    int fb_Ypos, fb_Upos, fb_Vpos;
     int width, height;
     int x_offset, y_offset;
-    unsigned char *tmp = malloc(screensize);
-    unsigned int start_timems;
-    unsigned int end_timems;
+    uint32_t start_timems;
+    uint32_t end_timems;
     struct timeval ts_start, ts_end;
+    static uint8_t *tmp = NULL;
 
     if (!tmp)
-        return -1;
+    {
+        tmp = malloc(g_screen_size);
+        if (tmp)
+        {
+            // for NV12 buffer, set it to black
+            memset(tmp, 0, g_screen_size / 3 * 2);
+            memset(tmp + g_screen_size / 3 * 2, 128, g_screen_size / 3);
+        }
+    }
+    assert(tmp);
 
     gettimeofday(&ts_start, NULL);
 
-    width = imgWidth > vinfo.xres ? vinfo.xres : imgWidth;
-    height = imgHeight > vinfo.yres ? vinfo.yres : imgHeight;
-    x_offset = (vinfo.xres - width) / 2;
-    y_offset = (vinfo.yres - height) / 2;
+    width = imgWidth > g_screen_width ? g_screen_width : imgWidth;
+    height = imgHeight > g_screen_height ? g_screen_height : imgHeight;
+    x_offset = (g_screen_width - width) / 2;
+    y_offset = (g_screen_height - height) / 2;
 
     YUVdata = inBuf;
     nv12data = tmp;
 
-    /* 每个像素两个字节 */
+    /* two bytes for every pixels */
     for(rows = 0; rows < height; rows++)
     {
-        // vinfo.xres, vinfo.yres vinfo.bits_per_pixel
-        fb_Ypos = ((rows + y_offset) * vinfo.xres + x_offset);
-        fb_Upos = ((rows + y_offset) / 2 * vinfo.xres / 2 + x_offset / 2) * 2;
-        fb_Upos = vinfo.xres * vinfo.yres + fb_Upos;
+        // g_screen_width, g_screen_height g_screen_bpp
+        fb_Ypos = ((rows + y_offset) * g_screen_width + x_offset);
+        fb_Upos = ((rows + y_offset) / 2 * g_screen_width / 2 + x_offset / 2) * 2;
+        fb_Upos = g_screen_width * g_screen_height + fb_Upos;
         fb_Vpos = fb_Upos + 1;
 
         Ypos = rows * imgWidth * 2;
@@ -145,82 +170,101 @@ int convert_yuyv_to_nv12(unsigned char *inBuf, unsigned char *outBuf, int imgWid
 
     gettimeofday(&ts_start, NULL);
 
-    memcpy(outBuf, tmp, screensize);
+    memcpy(outBuf, tmp, g_screen_size);
 
     gettimeofday(&ts_end, NULL);
     start_timems = ts_start.tv_sec * 1000 + ts_start.tv_usec/1000;
     end_timems = ts_end.tv_sec * 1000 + ts_end.tv_usec/1000;
     // printf("%s: copy use %dms, sizeof(int) = %d\n", __func__, end_timems - start_timems, sizeof(int));
 
-    free(tmp);
+    //free(tmp);
     return 0;
 }
 
-int convert_nv21_to_nv12(unsigned char *inBuf, unsigned char *outBuf, int imgWidth, int imgHeight, int is_nv21)
+int convert_nv21_to_nv12(const uint8_t *inBuf, uint8_t *outBuf,
+        int imgWidth, int imgHeight, int uv_changed)
 {
-    int rows ,cols;   /* 行列标志 */
-    int y, u, v, r, g, b;   /* yuv rgb 相关分量 */
-    unsigned char *nv12data, *nv21data;    /* YUV和RGB数据指针 */
-    int Ypos, Upos, Vpos;    /* Y U V在数据缓存中的偏移 */
-    int fb_Ypos, fb_Upos, fb_Vpos;    /* Y U V在数据缓存中的偏移 */
-    unsigned int i = 0;
+    int rows, cols;
+    const uint8_t *nv21data;
+    uint8_t *nv12data;
+    int Ypos, Upos, Vpos;
+    int fb_Ypos, fb_Upos, fb_Vpos;
     int width, height;
     int x_offset, y_offset;
-    unsigned char *tmp = malloc(screensize);
-    unsigned int start_timems;
-    unsigned int end_timems;
+    static uint8_t *tmp = NULL;
+    uint32_t start_timems;
+    uint32_t end_timems;
     struct timeval ts_start, ts_end;
 
     if (!tmp)
-        return -1;
+    {
+        tmp = malloc(g_screen_size);
+        if (tmp)
+        {
+            // for NV12 buffer, set it to black
+            memset(tmp, 0, g_screen_size / 3 * 2);
+            memset(tmp + g_screen_size / 3 * 2, 128, g_screen_size / 3);
+        }
+    }
+    assert(tmp);
 
     gettimeofday(&ts_start, NULL);
 
-    width = imgWidth > vinfo.xres ? vinfo.xres : imgWidth;
-    height = imgHeight > vinfo.yres ? vinfo.yres : imgHeight;
-    x_offset = (vinfo.xres - width) / 2;
-    y_offset = (vinfo.yres - height) / 2;
+    width = imgWidth > g_screen_width ? g_screen_width : imgWidth;
+    height = imgHeight > g_screen_height ? g_screen_height : imgHeight;
+    x_offset = (g_screen_width - width) / 2;
+    y_offset = (g_screen_height - height) / 2;
 
     nv21data = inBuf;
     nv12data = tmp;
 
-    if (imgWidth == vinfo.xres) {
-        fb_Ypos = y_offset * vinfo.xres + x_offset;
-        fb_Upos = (y_offset / 2 * vinfo.xres / 2 + x_offset / 2) * 2;
-        fb_Upos = vinfo.xres * vinfo.yres + fb_Upos;
+    // printf("[%s,%d]:imgWidth=%d, imgHeight=%d, g_screen_width=%d g_screen_height=%d g_screen_bpp=%d\n",__FUNCTION__,__LINE__,
+    //     imgWidth, imgHeight, g_screen_width, g_screen_height, g_screen_bpp);
+
+    // below for same image size and not uv changed
+    if (imgWidth == g_screen_width && !uv_changed) {
+        fb_Ypos = y_offset * g_screen_width + x_offset;
+        fb_Upos = (y_offset / 2 * g_screen_width / 2 + x_offset / 2) * 2;
+        fb_Upos = g_screen_width * g_screen_height + fb_Upos;
         Upos = imgWidth * imgHeight;
-        memcpy(&tmp[fb_Ypos], inBuf, imgWidth * height);
-        memcpy(&tmp[fb_Upos], &inBuf[Upos], imgWidth * height / 2);
-        memcpy(&outBuf[fb_Ypos], &tmp[fb_Ypos], imgWidth * height * 2);
-        memcpy(&outBuf[fb_Upos], &tmp[fb_Upos], imgWidth * height / 2);
-        // memcpy(&outBuf[fb_Ypos], inBuf, imgWidth * height);
-        // memcpy(&outBuf[fb_Upos], inBuf, imgWidth * height / 2);
-        free(tmp);
+
+        if (STF_DISP_FB == g_screen_distype) {
+            // TODO: it is strange that with tmp buffer will more faster for framebuf
+            memcpy(&tmp[fb_Ypos], inBuf, imgWidth * height);
+            memcpy(&tmp[fb_Upos], &inBuf[Upos], imgWidth * height / 2);
+            memcpy(&outBuf[fb_Ypos], &tmp[fb_Ypos], imgWidth * height);
+            memcpy(&outBuf[fb_Upos], &tmp[fb_Upos], imgWidth * height / 2);
+        } else {
+            memcpy(&outBuf[fb_Ypos], inBuf, imgWidth * height);
+            memcpy(&outBuf[fb_Upos], &inBuf[Upos], imgWidth * height / 2);
+        }
+        //free(tmp);
         return 0;
     }
 
-    /* 每个像素两个字节 */
+    /* two bytes for every pixels */
     for(rows = 0; rows < height; rows+=2)
     {
-        // vinfo.xres, vinfo.yres vinfo.bits_per_pixel
-        fb_Ypos = ((rows + y_offset) * vinfo.xres + x_offset);
-        fb_Upos = ((rows + y_offset) / 2 * vinfo.xres / 2 + x_offset / 2) * 2;
-        fb_Upos = vinfo.xres * vinfo.yres + fb_Upos;
+        // g_screen_width, g_screen_height g_screen_bpp
+        fb_Ypos = ((rows + y_offset) * g_screen_width + x_offset);
+        fb_Upos = ((rows + y_offset) / 2 * g_screen_width / 2 + x_offset / 2) * 2;
+        fb_Upos = g_screen_width * g_screen_height + fb_Upos;
         fb_Vpos = fb_Upos + 1;
 
         Ypos = rows * imgWidth;
         Upos = imgWidth * imgHeight + Ypos / 2;
         Vpos = Upos + 1;
         memcpy(&nv12data[fb_Ypos], &nv21data[Ypos], width);
-        memcpy(&nv12data[fb_Ypos+vinfo.xres], &nv21data[Ypos+imgWidth], width);
+        memcpy(&nv12data[fb_Ypos+g_screen_width], &nv21data[Ypos+imgWidth], width);
 
-        if (is_nv21) {
+        if (uv_changed) {
             for (cols = 0; cols < width; cols += 2) {
                 nv12data[fb_Upos+cols] = nv21data[Vpos+cols];
                 nv12data[fb_Vpos+cols] = nv21data[Upos+cols];
             }
-        } else
+        } else {
             memcpy(&nv12data[fb_Upos], &nv21data[Upos], width);
+        }
     }
 
     gettimeofday(&ts_end, NULL);
@@ -230,29 +274,30 @@ int convert_nv21_to_nv12(unsigned char *inBuf, unsigned char *outBuf, int imgWid
 
     gettimeofday(&ts_start, NULL);
 
-    memcpy(outBuf, tmp, screensize);
+    memcpy(outBuf, tmp, g_screen_size);
 
     gettimeofday(&ts_end, NULL);
     start_timems = ts_start.tv_sec * 1000 + ts_start.tv_usec/1000;
     end_timems = ts_end.tv_sec * 1000 + ts_end.tv_usec/1000;
     // printf("%s: copy use %dms, sizeof(int) = %d\n", __func__, end_timems - start_timems, sizeof(int));
 
-    free(tmp);
+    //free(tmp);
     return 0;
 }
 
-int convert_nv21_to_rgb(unsigned char *inBuf, unsigned char *outBuf, int imgWidth, int imgHeight, int is_nv21)
+int convert_nv21_to_rgb(const uint8_t *inBuf, uint8_t *outBuf, int imgWidth, int imgHeight, int is_nv21)
 {
-    int rows ,cols;   /* 行列标志 */
-    int y, u, v, r, g, b;   /* yuv rgb 相关分量 */
-    unsigned char *YUVdata, *RGBdata;    /* YUV和RGB数据指针 */
-    int Ypos, Upos, Vpos;    /* Y U V在数据缓存中的偏移 */
-    unsigned int i = 0;
+    int rows ,cols;
+    int y, u, v, r, g, b;
+    const uint8_t *YUVdata;
+    uint8_t *RGBdata;
+    int Ypos, Upos, Vpos;
+    uint32_t i = 0;
     int width, height;
     int x_offset, y_offset;
-    unsigned char *tmp = malloc(screensize);
-    unsigned int start_timems;
-    unsigned int end_timems;
+    uint8_t *tmp = malloc(g_screen_size);
+    uint32_t start_timems;
+    uint32_t end_timems;
     struct timeval ts_start, ts_end;
 
     if (!tmp)
@@ -260,19 +305,19 @@ int convert_nv21_to_rgb(unsigned char *inBuf, unsigned char *outBuf, int imgWidt
 
     gettimeofday(&ts_start, NULL);
 
-    width = imgWidth > vinfo.xres ? vinfo.xres : imgWidth;
-    height = imgHeight > vinfo.yres ? vinfo.yres : imgHeight;
-    x_offset = (vinfo.xres - width) / 2;
-    y_offset = (vinfo.yres - height) / 2;
+    width = imgWidth > g_screen_width ? g_screen_width : imgWidth;
+    height = imgHeight > g_screen_height ? g_screen_height : imgHeight;
+    x_offset = (g_screen_width - width) / 2;
+    y_offset = (g_screen_height - height) / 2;
 
     YUVdata = inBuf;
     RGBdata = tmp;
 
-    /* 每个像素两个字节 */
+    /* two bytes for every pixels */
     for(rows = 0; rows < height; rows++)
     {
-        // vinfo.xres, vinfo.yres vinfo.bits_per_pixel
-        RGBdata = tmp + ((rows + y_offset) * vinfo.xres + x_offset) * vinfo.bits_per_pixel / 8;
+        // g_screen_width, g_screen_height g_screen_bpp
+        RGBdata = tmp + ((rows + y_offset) * g_screen_width + x_offset) * g_screen_bpp / 8;
 
         Ypos = rows * imgWidth;
         Vpos = Upos = imgWidth * imgHeight + Ypos / 2;
@@ -282,9 +327,8 @@ int convert_nv21_to_rgb(unsigned char *inBuf, unsigned char *outBuf, int imgWidt
             Upos = Vpos + 1;
         i = 0;
 
-        for(cols = 0; cols < width; cols++)
+        for (cols = 0; cols < width; cols++)
         {
-            /* 矩阵推到，百度 */
             y = YUVdata[Ypos];
             u = YUVdata[Upos] - 128;
             v = YUVdata[Vpos] - 128;
@@ -297,11 +341,11 @@ int convert_nv21_to_rgb(unsigned char *inBuf, unsigned char *outBuf, int imgWidt
             g = g > 255 ? 255 : (g < 0 ? 0 : g);
             b = b > 255 ? 255 : (b < 0 ? 0 : b);
 
-            /* 从低到高r g b */
-            if (vinfo.bits_per_pixel == 16) {   // RGB565
-                *(RGBdata ++) = (((g & 0x1c) << 3) | (b >> 3));   /* g低5位，b高5位 */
-                *(RGBdata ++) = ((r & 0xf8) | (g >> 5));    /* r高5位，g高3位 */
-            } else if (vinfo.bits_per_pixel == 24) {   // RGB888
+            /* low -> high r g b */
+            if (g_screen_bpp == 16) {   // RGB565
+                *(RGBdata ++) = (((g & 0x1c) << 3) | (b >> 3));   /* g low 5bit，b high 5bit */
+                *(RGBdata ++) = ((r & 0xf8) | (g >> 5));    /* r high 5bit，g high 3bit */
+            } else if (g_screen_bpp == 24) {   // RGB888
                 *(RGBdata ++) = b;
                 *(RGBdata ++) = g;
                 *(RGBdata ++) = r;
@@ -313,7 +357,7 @@ int convert_nv21_to_rgb(unsigned char *inBuf, unsigned char *outBuf, int imgWidt
             }
             Ypos++;
             i++;
-            /* 每4个Y更新一次UV */
+            /* every 4 time y to update 1 time uv */
             if(!(i & 0x03))
             {
                 Vpos = Upos = imgWidth * imgHeight + Ypos/2;
@@ -333,10 +377,10 @@ int convert_nv21_to_rgb(unsigned char *inBuf, unsigned char *outBuf, int imgWidt
     gettimeofday(&ts_start, NULL);
 
 #if 1
-    memcpy(outBuf, tmp, screensize);
+    memcpy(outBuf, tmp, g_screen_size);
 #else
     int *p_outBuf, *p_tmp;
-    int size = screensize/4;
+    int size = g_screen_size/4;
     p_outBuf = outBuf;
     p_tmp = tmp;
 
@@ -393,13 +437,13 @@ static int Rgb2V(int r0, int g0, int b0)
 //Y1 -> yyyyyy
 //UV0 points destination rows of interleaved UV plane.
 //UV0 -> uvuvuv
-static void Rgb2NV12TwoRows(const unsigned char I0[],
-                            const unsigned char I1[],
+static void Rgb2NV12TwoRows(const uint8_t I0[],
+                            const uint8_t I1[],
                             int step,
                             const int image_width,
-                            unsigned char Y0[],
-                            unsigned char Y1[],
-                            unsigned char UV0[])
+                            uint8_t Y0[],
+                            uint8_t Y1[],
+                            uint8_t UV0[])
 {
     int x;  //Column index
 
@@ -407,48 +451,48 @@ static void Rgb2NV12TwoRows(const unsigned char I0[],
     for (x = 0; x < image_width; x += 2)
     {
         //Load R,G,B elements from first row (and convert to int).
-        unsigned char b00 = (I0[x*step + 0] & 0x1F) << 3;
-        unsigned char g00 = ((I0[x*step + 1] & 0x7) << 3 | I0[x*step + 0] >> 5) << 2;
-        unsigned char r00 = I0[x*step + 1] & (~0x7);
+        uint8_t b00 = (I0[x*step + 0] & 0x1F) << 3;
+        uint8_t g00 = ((I0[x*step + 1] & 0x7) << 3 | I0[x*step + 0] >> 5) << 2;
+        uint8_t r00 = I0[x*step + 1] & (~0x7);
 
         //Load next R,G,B elements from first row (and convert to int).
-        unsigned char b01 = (I0[x*step + step+0] & 0x1F) << 3;
-        unsigned char g01 = ((I0[x*step + step+1] & 0x7) << 3 | I0[x*step + step+0] >> 5) << 2;
-        unsigned char r01 = I0[x*step + step+1] & (~0x7);
+        uint8_t b01 = (I0[x*step + step+0] & 0x1F) << 3;
+        uint8_t g01 = ((I0[x*step + step+1] & 0x7) << 3 | I0[x*step + step+0] >> 5) << 2;
+        uint8_t r01 = I0[x*step + step+1] & (~0x7);
 
         //Load R,G,B elements from second row (and convert to int).
-        unsigned char b10 = (I1[x*step + 0] & 0x1F) << 3;
-        unsigned char g10 = ((I1[x*step + 1] & 0x7) << 3 | I1[x*step + 0] >> 5) << 2;
-        unsigned char r10 = I1[x*step + 1] & (~0x7);
+        uint8_t b10 = (I1[x*step + 0] & 0x1F) << 3;
+        uint8_t g10 = ((I1[x*step + 1] & 0x7) << 3 | I1[x*step + 0] >> 5) << 2;
+        uint8_t r10 = I1[x*step + 1] & (~0x7);
 
         //Load next R,G,B elements from second row (and convert to int).
-        unsigned char b11 = (I1[x*step + step+0] & 0x1F) << 3;
-        unsigned char g11 = ((I1[x*step + step+1] & 0x7) << 3 | I1[x*step + step+0] >> 5) << 2;
-        unsigned char r11 = I1[x*step + step+1] & (~0x7);
+        uint8_t b11 = (I1[x*step + step+0] & 0x1F) << 3;
+        uint8_t g11 = ((I1[x*step + step+1] & 0x7) << 3 | I1[x*step + step+0] >> 5) << 2;
+        uint8_t r11 = I1[x*step + step+1] & (~0x7);
 
         //Calculate 4 Y elements.
-        unsigned char y00 = Rgb2Y(r00, g00, b00);
-        unsigned char y01 = Rgb2Y(r01, g01, b01);
-        unsigned char y10 = Rgb2Y(r10, g10, b10);
-        unsigned char y11 = Rgb2Y(r11, g11, b11);
+        uint8_t y00 = Rgb2Y(r00, g00, b00);
+        uint8_t y01 = Rgb2Y(r01, g01, b01);
+        uint8_t y10 = Rgb2Y(r10, g10, b10);
+        uint8_t y11 = Rgb2Y(r11, g11, b11);
 
         //Calculate 4 U elements.
-        unsigned char u00 = Rgb2U(r00, g00, b00);
-        unsigned char u01 = Rgb2U(r01, g01, b01);
-        unsigned char u10 = Rgb2U(r10, g10, b10);
-        unsigned char u11 = Rgb2U(r11, g11, b11);
+        uint8_t u00 = Rgb2U(r00, g00, b00);
+        uint8_t u01 = Rgb2U(r01, g01, b01);
+        uint8_t u10 = Rgb2U(r10, g10, b10);
+        uint8_t u11 = Rgb2U(r11, g11, b11);
 
         //Calculate 4 V elements.
-        unsigned char v00 = Rgb2V(r00, g00, b00);
-        unsigned char v01 = Rgb2V(r01, g01, b01);
-        unsigned char v10 = Rgb2V(r10, g10, b10);
-        unsigned char v11 = Rgb2V(r11, g11, b11);
+        uint8_t v00 = Rgb2V(r00, g00, b00);
+        uint8_t v01 = Rgb2V(r01, g01, b01);
+        uint8_t v10 = Rgb2V(r10, g10, b10);
+        uint8_t v11 = Rgb2V(r11, g11, b11);
 
         //Calculate destination U element: average of 2x2 "original" U elements.
-        unsigned char u0 = (u00 + u01 + u10 + u11)/4;
+        uint8_t u0 = (u00 + u01 + u10 + u11)/4;
 
         //Calculate destination V element: average of 2x2 "original" V elements.
-        unsigned char v0 = (v00 + v01 + v10 + v11)/4;
+        uint8_t v0 = (v00 + v01 + v10 + v11)/4;
 
         //Store 4 Y elements (two in first row and two in second row).
         Y0[x + 0]    = y00;
@@ -487,34 +531,34 @@ static void Rgb2NV12TwoRows(const unsigned char I0[],
 //1. image_width must be a multiple of 2.
 //2. image_height must be a multiple of 2.
 //3. I and J must be two separate arrays (in place computation is not supported).
-void Rgb2NV12(const unsigned char I[], int step,
+void Rgb2NV12(const uint8_t I[], int step,
               const int image_width,
               const int image_height,
-              unsigned char J[])
+              uint8_t J[])
 {
     //In NV12 format, UV plane starts below Y plane.
-    // unsigned char *UV = &J[image_width*image_height];
-    unsigned char *UV = J;
+    // uint8_t *UV = &J[image_width*image_height];
+    uint8_t *UV = J;
 
     //I0 and I1 points two sequential source rows.
-    const unsigned char *I0;  //I0 -> rgbrgbrgbrgbrgbrgb...
-    const unsigned char *I1;  //I1 -> rgbrgbrgbrgbrgbrgb...
+    const uint8_t *I0;  //I0 -> rgbrgbrgbrgbrgbrgb...
+    const uint8_t *I1;  //I1 -> rgbrgbrgbrgbrgbrgb...
 
     //Y0 and Y1 points two sequential destination rows of Y plane.
-    unsigned char *Y0;    //Y0 -> yyyyyy
-    unsigned char *Y1;    //Y1 -> yyyyyy
+    uint8_t *Y0;    //Y0 -> yyyyyy
+    uint8_t *Y1;    //Y1 -> yyyyyy
 
     //UV0 points destination rows of interleaved UV plane.
-    unsigned char *UV0; //UV0 -> uvuvuv
+    uint8_t *UV0; //UV0 -> uvuvuv
 
     int y;  //Row index
     int width, height;
     int x_offset, y_offset;
 
-    width = image_width > vinfo.xres ? vinfo.xres : image_width;
-    height = image_height > vinfo.yres ? vinfo.yres : image_height;
-    x_offset = (vinfo.xres - width) / 2;
-    y_offset = (vinfo.yres - height) / 2;
+    width = image_width > g_screen_width ? g_screen_width : image_width;
+    height = image_height > g_screen_height ? g_screen_height : image_height;
+    x_offset = (g_screen_width - width) / 2;
+    y_offset = (g_screen_height - height) / 2;
 
     //In each iteration: process two rows of Y plane, and one row of interleaved UV plane.
     for (y = 0; y < height; y += 2)
@@ -522,10 +566,10 @@ void Rgb2NV12(const unsigned char I[], int step,
         I0 = &I[y*image_width*step];        //Input row width is image_width*3 bytes (each pixel is R,G,B).
         I1 = &I[(y+1)*image_width*step];
 
-        Y0 = &J[(y+y_offset)*vinfo.xres+x_offset];            //Output Y row width is image_width bytes (one Y element per pixel).
-        Y1 = &J[(y+1+y_offset)*vinfo.xres+x_offset];
+        Y0 = &J[(y+y_offset)*g_screen_width+x_offset];            //Output Y row width is image_width bytes (one Y element per pixel).
+        Y1 = &J[(y+1+y_offset)*g_screen_width+x_offset];
 
-        UV0 = &UV[vinfo.xres*vinfo.yres+((y+y_offset)/2*vinfo.xres/2+x_offset/2)*2];    //Output UV row - width is same as Y row width.
+        UV0 = &UV[g_screen_width*g_screen_height+((y+y_offset)/2*g_screen_width/2+x_offset/2)*2];    //Output UV row - width is same as Y row width.
 
         //Process two source rows into: Two Y destination row, and one destination interleaved U,V row.
         Rgb2NV12TwoRows(I0,
@@ -538,19 +582,13 @@ void Rgb2NV12(const unsigned char I[], int step,
     }
 }
 
-int convert_rgb565_to_nv12(unsigned char *inBuf, unsigned char *outBuf, int imgWidth, int imgHeight, int is_nv21)
+int convert_rgb565_to_nv12(const uint8_t *inBuf, uint8_t *outBuf, int imgWidth, int imgHeight, int is_nv21)
 {
-    int rows ,cols;    /* 行列标志 */
-    int y, u, v, r, g, b;    /* yuv rgb 相关分量 */
-    unsigned char *YUVdata, *RGBdata;    /* YUV和RGB数据指针 */
-    int Ypos, Upos, Vpos;    /* Y U V在数据缓存中的偏移 */
-    unsigned int i = 0;
-    unsigned char *tmp = malloc(screensize);
-    unsigned int start_timems;
-    unsigned int end_timems;
+    uint8_t *tmp = malloc(g_screen_size);
+    uint32_t start_timems;
+    uint32_t end_timems;
     struct timespec ts_start, ts_end;
     clock_gettime(CLOCK_MONOTONIC, &ts_start);
-
 
     Rgb2NV12(inBuf, 2, imgWidth, imgHeight, tmp);
 
@@ -561,7 +599,7 @@ int convert_rgb565_to_nv12(unsigned char *inBuf, unsigned char *outBuf, int imgW
 
     clock_gettime(CLOCK_MONOTONIC, &ts_start);
 
-    memcpy(outBuf, tmp, screensize);
+    memcpy(outBuf, tmp, g_screen_size);
 
     clock_gettime(CLOCK_MONOTONIC, &ts_end);
     start_timems = ts_start.tv_sec * 1000 + ts_start.tv_nsec/1000000;
@@ -572,34 +610,35 @@ int convert_rgb565_to_nv12(unsigned char *inBuf, unsigned char *outBuf, int imgW
     return 0;
 }
 
-int convert_yuyv_to_rgb(unsigned char *inBuf, unsigned char *outBuf, int imgWidth, int imgHeight, int cvtMethod)
+int convert_yuyv_to_rgb(const uint8_t *inBuf, uint8_t *outBuf, int imgWidth, int imgHeight, int cvtMethod)
 {
-    int rows ,cols;    /* 行列标志 */
-    int y, u, v, r, g, b;    /* yuv rgb 相关分量 */
-    unsigned char *YUVdata, *RGBdata;    /* YUV和RGB数据指针 */
-    int Ypos, Upos, Vpos;    /* Y U V在数据缓存中的偏移 */
-    unsigned int i = 0;
+    int rows ,cols;
+    int y, u, v, r, g, b;
+    const uint8_t *YUVdata;
+    uint8_t *RGBdata;
+    int Ypos, Upos, Vpos;
+    uint32_t i = 0;
     int width, height;
     int x_offset, y_offset;
-    unsigned char *tmp = malloc(screensize);
-    unsigned int start_timems;
-    unsigned int end_timems;
+    uint8_t *tmp = malloc(g_screen_size);
+    uint32_t start_timems;
+    uint32_t end_timems;
     struct timespec ts_start, ts_end;
     clock_gettime(CLOCK_MONOTONIC, &ts_start);
 
-    width = imgWidth > vinfo.xres ? vinfo.xres : imgWidth;
-    height = imgHeight > vinfo.yres ? vinfo.yres : imgHeight;
-    x_offset = (vinfo.xres - width) / 2;
-    y_offset = (vinfo.yres - height) / 2;
+    width = imgWidth > g_screen_width ? g_screen_width : imgWidth;
+    height = imgHeight > g_screen_height ? g_screen_height : imgHeight;
+    x_offset = (g_screen_width - width) / 2;
+    y_offset = (g_screen_height - height) / 2;
 
     YUVdata = inBuf;
     RGBdata = tmp;
 
-    /* 每个像素两个字节 */
+    /* two bytes for every pixels */
     for(rows = 0; rows < height; rows++)
     {
-        // vinfo.xres, vinfo.yres vinfo.bits_per_pixel
-        RGBdata = tmp + ((rows + y_offset) * vinfo.xres + x_offset) * vinfo.bits_per_pixel / 8;
+        // g_screen_width, g_screen_height g_screen_bpp
+        RGBdata = tmp + ((rows + y_offset) * g_screen_width + x_offset) * g_screen_bpp / 8;
 
         Ypos = rows * imgWidth * 2;
         Upos = Ypos + 1;
@@ -608,7 +647,6 @@ int convert_yuyv_to_rgb(unsigned char *inBuf, unsigned char *outBuf, int imgWidt
 
         for(cols = 0; cols < width; cols++)
         {
-            /* 矩阵推到，百度 */
             y = YUVdata[Ypos];
             u = YUVdata[Upos] - 128;
             v = YUVdata[Vpos] - 128;
@@ -621,11 +659,11 @@ int convert_yuyv_to_rgb(unsigned char *inBuf, unsigned char *outBuf, int imgWidt
             g = g > 255 ? 255 : (g < 0 ? 0 : g);
             b = b > 255 ? 255 : (b < 0 ? 0 : b);
 
-            /* 从低到高r g b */
-            if (vinfo.bits_per_pixel == 16) {   // RGB565
-                *(RGBdata ++) = (((g & 0x1c) << 3) | (b >> 3));    /* g低5位，b高5位 */
-                *(RGBdata ++) = ((r & 0xf8) | (g >> 5));    /* r高5位，g高3位 */
-            } else if (vinfo.bits_per_pixel == 24) {   // RGB888
+            /* low -> high r g b */
+            if (g_screen_bpp == 16) {   // RGB565
+                *(RGBdata ++) = (((g & 0x1c) << 3) | (b >> 3));    /* g low 5bits，b high 5bits */
+                *(RGBdata ++) = ((r & 0xf8) | (g >> 5));    /* r high 5bits, g high 3bits */
+            } else if (g_screen_bpp == 24) {   // RGB888
                 *(RGBdata ++) = b;
                 *(RGBdata ++) = g;
                 *(RGBdata ++) = r;
@@ -635,11 +673,11 @@ int convert_yuyv_to_rgb(unsigned char *inBuf, unsigned char *outBuf, int imgWidt
                 *(RGBdata ++) = r;
                 *(RGBdata ++) = 0xFF;
             }
-            /* 两个字节数据中包含一个Y */
+            /* two bytes contain 1 y */
             Ypos += 2;
             //Ypos++;
             i++;
-            /* 每两个Y更新一次UV */
+            /* every 2 y to update 1 uv */
             if(!(i & 0x01))
             {
                 Upos = Ypos + 1;
@@ -655,7 +693,7 @@ int convert_yuyv_to_rgb(unsigned char *inBuf, unsigned char *outBuf, int imgWidt
 
     clock_gettime(CLOCK_MONOTONIC, &ts_start);
 
-    memcpy(outBuf, tmp, screensize);
+    memcpy(outBuf, tmp, g_screen_size);
 
     clock_gettime(CLOCK_MONOTONIC, &ts_end);
     start_timems = ts_start.tv_sec * 1000 + ts_start.tv_nsec/1000000;
@@ -666,15 +704,13 @@ int convert_yuyv_to_rgb(unsigned char *inBuf, unsigned char *outBuf, int imgWidt
     return 0;
 }
 
-int convert_yuv444_to_rgb(unsigned char *inBuf, unsigned char *outBuf, int imgWidth, int imgHeight, int cvtMethod)
+int convert_yuv444_to_rgb(uint8_t *inBuf, uint8_t *outBuf, int imgWidth, int imgHeight, int cvtMethod)
 {
-    int rows ,cols;    /* 行列标志 */
-    int y, u, v, r, g, b;    /* yuv rgb 相关分量 */
-    unsigned char *YUVdata, *RGBdata;    /* YUV和RGB数据指针 */
-    int Ypos, Upos, Vpos;    /* Y U V在数据缓存中的偏移 */
-    unsigned int i = 0;
-    unsigned short bar = 0;
-    unsigned char *tmp = malloc(screensize);
+    int rows ,cols;
+    int y, u, v, r, g, b;
+    uint8_t *YUVdata, *RGBdata;
+    int Ypos;
+    uint8_t *tmp = malloc(g_screen_size);
 
     YUVdata = inBuf;
     RGBdata = tmp;
@@ -697,11 +733,11 @@ int convert_yuv444_to_rgb(unsigned char *inBuf, unsigned char *outBuf, int imgWi
             g = g > 255 ? 255 : (g < 0 ? 0 : g);
             b = b > 255 ? 255 : (b < 0 ? 0 : b);
 
-            /* 从低到高r g b */
-            if (vinfo.bits_per_pixel == 16) {   // RGB565
-                *(RGBdata ++) = (((g & 0x1c) << 3) | (b >> 3));    /* g低5位，b高5位 */
-                *(RGBdata ++) = ((r & 0xf8) | (g >> 5));    /* r高5位，g高3位 */
-            } else if (vinfo.bits_per_pixel == 24) {   // RGB888
+            /* low -> high r g b */
+            if (g_screen_bpp == 16) {   // RGB565
+                *(RGBdata ++) = (((g & 0x1c) << 3) | (b >> 3));    /* g low 5bits，b high 5bits */
+                *(RGBdata ++) = ((r & 0xf8) | (g >> 5));    /* r high 5bits，g high 3bits */
+            } else if (g_screen_bpp == 24) {   // RGB888
                 *(RGBdata ++) = b;
                 *(RGBdata ++) = g;
                 *(RGBdata ++) = r;
@@ -715,30 +751,31 @@ int convert_yuv444_to_rgb(unsigned char *inBuf, unsigned char *outBuf, int imgWi
         }
     }
 
-    memcpy(outBuf, tmp, screensize);
+    memcpy(outBuf, tmp, g_screen_size);
     free(tmp);
     return 0;
 }
 
-int convert_rgb565_to_rgb(unsigned char *inBuf, unsigned char *outBuf, int imgWidth, int imgHeight, int cvtMethod)
+int convert_rgb565_to_rgb(const uint8_t *inBuf, uint8_t *outBuf, int imgWidth, int imgHeight, int cvtMethod)
 {
-    int rows ,cols;    /* 行列标志 */
-    unsigned char *RGB565data, *RGBdata;    /* YUV和RGB数据指针 */
+    int rows ,cols;
+    const uint8_t *RGB565data;
+    uint8_t *RGBdata;
     int RGBpos;
     int width, height;
     int x_offset, y_offset;
-    unsigned char *tmp = malloc(screensize);
+    uint8_t *tmp = malloc(g_screen_size);
 
-    width = imgWidth > vinfo.xres ? vinfo.xres : imgWidth;
-    height = imgHeight > vinfo.yres ? vinfo.yres : imgHeight;
-    x_offset = (vinfo.xres - width) / 2;
-    y_offset = (vinfo.yres - height) / 2;
+    width = imgWidth > g_screen_width ? g_screen_width : imgWidth;
+    height = imgHeight > g_screen_height ? g_screen_height : imgHeight;
+    x_offset = (g_screen_width - width) / 2;
+    y_offset = (g_screen_height - height) / 2;
 
     RGB565data = inBuf;
     RGBdata = tmp;
 
-    if (imgWidth == vinfo.xres) {
-        RGBpos = (y_offset * vinfo.xres + x_offset) * 2;
+    if (imgWidth == g_screen_width) {
+        RGBpos = (y_offset * g_screen_width + x_offset) * 2;
         memcpy(&tmp[RGBpos], inBuf, imgWidth * height * 2);
         memcpy(&outBuf[RGBpos], &tmp[RGBpos], imgWidth * height * 2);
         // memcpy(&outBuf[RGBpos], inBuf, imgWidth * height * 2);
@@ -749,9 +786,9 @@ int convert_rgb565_to_rgb(unsigned char *inBuf, unsigned char *outBuf, int imgWi
     RGBpos = 0;
     for(rows = 0; rows < imgHeight; rows++)
     {
-        RGBdata = tmp + ((rows + y_offset) * vinfo.xres + x_offset) * vinfo.bits_per_pixel / 8;
+        RGBdata = tmp + ((rows + y_offset) * g_screen_width + x_offset) * g_screen_bpp / 8;
         RGBpos = rows * imgWidth * 2;
-        if (vinfo.bits_per_pixel == 16) {   // RGB565
+        if (g_screen_bpp == 16) {   // RGB565
             memcpy(RGBdata, &RGB565data[RGBpos], imgWidth * 2);
         } else {
             for(cols = 0; cols < imgWidth; cols++)
@@ -759,7 +796,7 @@ int convert_rgb565_to_rgb(unsigned char *inBuf, unsigned char *outBuf, int imgWi
                 *(RGBdata ++) = RGB565data[RGBpos] & 0x1F;
                 *(RGBdata ++) = (RGB565data[RGBpos + 1] & 0x7) << 3 | RGB565data[RGBpos] >> 5;
                 *(RGBdata ++) = RGB565data[RGBpos + 1] >> 3;
-                if (vinfo.bits_per_pixel == 32) {   // RGB888
+                if (g_screen_bpp == 32) {   // RGB888
                     *(RGBdata ++) = 0xFF;
                 }
                 RGBpos += 2;
@@ -767,25 +804,26 @@ int convert_rgb565_to_rgb(unsigned char *inBuf, unsigned char *outBuf, int imgWi
         }
     }
 
-    memcpy(outBuf, tmp, screensize);
+    memcpy(outBuf, tmp, g_screen_size);
     free(tmp);
     return 0;
 }
 
-int convert_rgb888_to_rgb(unsigned char *inBuf, unsigned char *outBuf, int imgWidth, int imgHeight, int cvtMethod)
+int convert_rgb888_to_rgb(const uint8_t *inBuf, uint8_t *outBuf, int imgWidth, int imgHeight, int cvtMethod)
 {
-    int rows ,cols;    /* 行列标志 */
-    unsigned char *RGB888data, *RGBdata;    /* YUV和RGB数据指针 */
+    int rows ,cols;
+    const uint8_t *RGB888data;
+    uint8_t *RGBdata;
     int RGBpos;
     int width, height;
     int x_offset, y_offset;
-    unsigned char *tmp = malloc(screensize);
-    unsigned char r, g, b;
+    uint8_t *tmp = malloc(g_screen_size);
+    uint8_t r, g, b;
 
-    width = imgWidth > vinfo.xres ? vinfo.xres : imgWidth;
-    height = imgHeight > vinfo.yres ? vinfo.yres : imgHeight;
-    x_offset = (vinfo.xres - width) / 2;
-    y_offset = (vinfo.yres - height) / 2;
+    width = imgWidth > g_screen_width ? g_screen_width : imgWidth;
+    height = imgHeight > g_screen_height ? g_screen_height : imgHeight;
+    x_offset = (g_screen_width - width) / 2;
+    y_offset = (g_screen_height - height) / 2;
 
     RGB888data = inBuf;
     RGBdata = tmp;
@@ -793,19 +831,19 @@ int convert_rgb888_to_rgb(unsigned char *inBuf, unsigned char *outBuf, int imgWi
     RGBpos = 0;
     for(rows = 0; rows < imgHeight; rows++)
     {
-        RGBdata = tmp + ((rows + y_offset) * vinfo.xres + x_offset) * vinfo.bits_per_pixel / 8;
+        RGBdata = tmp + ((rows + y_offset) * g_screen_width + x_offset) * g_screen_bpp / 8;
         RGBpos = rows * imgWidth * 3;
-        if (vinfo.bits_per_pixel == 24) {   // RGB888
+        if (g_screen_bpp == 24) {   // RGB888
             memcpy(RGBdata, &RGB888data[RGBpos], imgWidth * 3);
         } else {
             for(cols = 0; cols < imgWidth; cols++)
             {
-                if (vinfo.bits_per_pixel == 16) {   // RGB565
+                if (g_screen_bpp == 16) {   // RGB565
                     b = RGB888data[RGBpos];
                     g = RGB888data[RGBpos + 1];
                     r = RGB888data[RGBpos + 2];
-                    *(RGBdata ++) = (((g & 0x1c) << 3) | (b >> 3));    /* g低5位，b高5位 */
-                    *(RGBdata ++) = ((r & 0xf8) | (g >> 5));    /* r高5位，g高3位 */
+                    *(RGBdata ++) = (((g & 0x1c) << 3) | (b >> 3));    /* g low 5bits，b high 5bits */
+                    *(RGBdata ++) = ((r & 0xf8) | (g >> 5));    /* r high 5bits，g high 3bits */
                 } else {   // RGB8888
                     *(RGBdata ++) = RGB888data[RGBpos];
                     *(RGBdata ++) = RGB888data[RGBpos + 1];
@@ -817,7 +855,7 @@ int convert_rgb888_to_rgb(unsigned char *inBuf, unsigned char *outBuf, int imgWi
         }
     }
 
-    memcpy(outBuf, tmp, screensize);
+    memcpy(outBuf, tmp, g_screen_size);
     free(tmp);
     return 0;
 }
