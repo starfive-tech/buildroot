@@ -28,7 +28,7 @@ USAGE="Usage:
 			media-ctl-pipeline.sh -d /dev/media0 -i dvp -s ISP0 -a start
 
 		stop pipeline:
-			media-ctl-pipeline.sh -d /dev/media0 -i dvp -s ISP0 -a start
+			media-ctl-pipeline.sh -d /dev/media0 -i dvp -s ISP0 -a stop
 "
 
 devname="/dev/media0"
@@ -191,6 +191,8 @@ case $interface_type in
 				case $sensor_type in
 					VIN)
 						echo "csiphy0 CSIRX0 vin enable pipeline:"
+						media-ctl -d "$devname" -vl "'stf_csiphy0':1 -> 'stf_csi0':0 [1]"
+						media-ctl -d "$devname" -vl "'stf_csi0':1 -> 'stf_vin0_wr':0 [1]"
 						;;
 					ISP0)
 						echo "csiphy0 CSIRX0 ISP0 enable pipeline:"
@@ -232,6 +234,8 @@ case $interface_type in
 				case $sensor_type in
 					VIN)
 						echo "csiphy0 CSIRX0 vin disable pipeline:"
+						media-ctl -d "$devname" -vl "'stf_csiphy0':1 -> 'stf_csi0':0 [0]"
+						media-ctl -d "$devname" -vl "'stf_csi0':1 -> 'stf_vin0_wr':0 [0]"
 						;;
 					ISP0)
 						echo "csiphy0 CSIRX0 ISP0 disable pipeline:"
