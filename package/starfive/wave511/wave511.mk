@@ -24,8 +24,8 @@ define WAVE511_INSTALL_TARGET_CMDS
 	$(INSTALL) -D -m 0777 $(@D)/vdi/linux/driver/load.sh $(TARGET_DIR)/root/wave511/vdec_load.sh
 	$(INSTALL) -D -m 0777 $(@D)/vdi/linux/driver/unload.sh $(TARGET_DIR)/root/wave511/vdec_unload.sh
 	$(INSTALL) -D -m 0644 $(@D)/libsfdec.so $(TARGET_DIR)/usr/lib/libsfdec.so
+	$(INSTALL) -D -m 0644 $(WAVE511_SITE)/../firmware/chagall.bin $(TARGET_DIR)/lib/firmware/chagall.bin
 	# $(INSTALL) -D -m 0644 $(@D)/vdi/linux/driver/vdec.ko $(TARGET_DIR)/root/wave511/vdec.ko
-	# $(INSTALL) -D -m 0644 $(WAVE511_SITE)/../firmware/chagall.bin $(TARGET_DIR)/lib/firmware/chagall.bin
 endef
 
 
