@@ -211,14 +211,16 @@ static void imageProcess(const uint8_t* inbuf, uint8_t* outbuf,
             if (gp_cfg_param->jpegFilename && gp_cfg_param->rec_fp) {
                 fwrite(inbuf, in_imagesize, 1, gp_cfg_param->rec_fp);
             }
-            if (out_format == new_in_format) {
-                yuyv_resize(inbuf, outbuf, in_width, in_height);
-            } else if ((STF_DISP_FB == disp_type) && is_yuv420sp) {
-                convert_yuyv_to_nv12(inbuf, outbuf, in_width, in_height, 1);
-            } else if ((STF_DISP_DRM == disp_type) && (out_format == V4L2_PIX_FMT_NV12)) {
-                convert_yuyv_to_nv12(inbuf, outbuf, in_width, in_height, 1);
-            } else {
-                convert_yuyv_to_rgb(inbuf, outbuf, in_width, in_height, 0);
+            if (outbuf) {
+                if (out_format == new_in_format) {
+                    yuyv_resize(inbuf, outbuf, in_width, in_height);
+                } else if ((STF_DISP_FB == disp_type) && is_yuv420sp) {
+                    convert_yuyv_to_nv12(inbuf, outbuf, in_width, in_height, 1);
+                } else if ((STF_DISP_DRM == disp_type) && (out_format == V4L2_PIX_FMT_NV12)) {
+                    convert_yuyv_to_nv12(inbuf, outbuf, in_width, in_height, 1);
+                } else {
+                    convert_yuyv_to_rgb(inbuf, outbuf, in_width, in_height, 0);
+                }
             }
             break;
         case V4L2_PIX_FMT_NV21:
@@ -259,12 +261,14 @@ static void imageProcess(const uint8_t* inbuf, uint8_t* outbuf,
             }
             LOG(STF_LEVEL_DEBUG, "out_format=%d, new_in_format=%d, is_yuv420sp=%d\n", out_format,
                     new_in_format, is_yuv420sp);
-            if (out_format == new_in_format) {
-                convert_nv21_to_nv12(inbuf, outbuf, in_width, in_height, 0);
-            } else if ((STF_DISP_FB == disp_type) && is_yuv420sp) {
-                convert_nv21_to_nv12(inbuf, outbuf, in_width, in_height, 1);
-            } else {
-                convert_nv21_to_rgb(inbuf, outbuf, in_width, in_height, 0);
+            if (outbuf) {
+                if (out_format == new_in_format) {
+                    convert_nv21_to_nv12(inbuf, outbuf, in_width, in_height, 0);
+                } else if ((STF_DISP_FB == disp_type) && is_yuv420sp) {
+                    convert_nv21_to_nv12(inbuf, outbuf, in_width, in_height, 1);
+                } else {
+                    convert_nv21_to_rgb(inbuf, outbuf, in_width, in_height, 0);
+                }
             }
             break;
         case V4L2_PIX_FMT_RGB24:
@@ -279,7 +283,10 @@ static void imageProcess(const uint8_t* inbuf, uint8_t* outbuf,
             if (gp_cfg_param->jpegFilename && gp_cfg_param->rec_fp) {
                 fwrite(inbuf, in_imagesize, 1, gp_cfg_param->rec_fp);
             }
-            convert_rgb888_to_rgb(inbuf, outbuf, in_width, in_height, 0);
+
+            if (outbuf)
+                convert_rgb888_to_rgb(inbuf, outbuf, in_width, in_height, 0);
+
             break;
         case V4L2_PIX_FMT_RGB565:
             // if (jpegFilename) {
@@ -293,12 +300,15 @@ static void imageProcess(const uint8_t* inbuf, uint8_t* outbuf,
             if (gp_cfg_param->jpegFilename && gp_cfg_param->rec_fp) {
                 fwrite(inbuf, in_imagesize, 1, gp_cfg_param->rec_fp);
             }
-            if (out_format == new_in_format)
-                convert_rgb565_to_rgb(inbuf, outbuf, in_width, in_height, 0);
-            else if ((STF_DISP_FB == disp_type) && is_yuv420sp)
-                convert_rgb565_to_nv12(inbuf, outbuf, in_width, in_height, 0);
-            else
-                convert_rgb565_to_rgb(inbuf, outbuf, in_width, in_height, 0);
+
+            if (outbuf) {
+                if (out_format == new_in_format)
+                    convert_rgb565_to_rgb(inbuf, outbuf, in_width, in_height, 0);
+                else if ((STF_DISP_FB == disp_type) && is_yuv420sp)
+                    convert_rgb565_to_nv12(inbuf, outbuf, in_width, in_height, 0);
+                else
+                    convert_rgb565_to_rgb(inbuf, outbuf, in_width, in_height, 0);
+            }
             break;
         case V4L2_PIX_FMT_SRGGB12:
             if (jpegFilename)
@@ -670,8 +680,8 @@ static void usage(FILE* fp, int argc, char** argv)
         "-s | --g_imagesize     print image size\n"
         "\n"
         "Eg:\n"
-        "\t drm: v4l2test -d /dev/video2 -f 5 -c -W 1920 -H 1080 -m 2 -t 2\n"
-        "\t fb:  v4l2test -d /dev/video2 -f 5 -c -W 1920 -H 1080 -m 0 -t 1\n"
+        "\t drm: v4l2test -d /dev/video1 -f 5 -c -W 1920 -H 1080 -m 2 -t 2\n"
+        "\t fb:  v4l2test -d /dev/video1 -f 5 -c -W 1920 -H 1080 -m 0 -t 1\n"
         "\n"
         "Open debug log level: \n"
         "\t export V4L2_DEBUG=3\n"
