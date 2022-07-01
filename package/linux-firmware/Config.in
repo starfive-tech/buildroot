@@ -233,6 +233,12 @@ config BR2_PACKAGE_LINUX_FIRMWARE_IWLWIFI_9XXX
 	  Firmware files for the Intel Wifi 9xxx devices supported by
 	  the iwlwifi kernel driver.
 
+config BR2_PACKAGE_LINUX_FIRMWARE_IWLWIFI_AX210
+	bool "Intel iwlwifi AX210"
+	help
+	  Firmware files for the Intel Wifi AX210 devices supported by
+	  the iwlwifi kernel driver.
+
 config BR2_PACKAGE_LINUX_FIRMWARE_LIBERTAS_SD8686_V8
 	bool "Libertas SD 8686 v8"
 	help
