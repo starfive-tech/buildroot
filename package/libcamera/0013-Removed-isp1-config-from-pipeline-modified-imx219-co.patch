@@ -18,7 +18,7 @@ index 3446b0a..dc4fc63 100644
  ---
  sensors:
 -  - sensorentity: "imx219 0-0010"
-+  - sensorentity: "imx219 4-0010"
++  - sensorentity: "imx219 6-0010"
      ispfwimage: "stf_isp0_fw_dump.bin"
      sensortype: 4
 -
@@ -46,7 +46,7 @@ index cc4cd1e..7f97069 100644
  const std::vector<SensorConfig> defaultSensorConfigs = {
 -	{ "imx219 0-0010", "stf_isp0_fw_dump.bin", MIPICSI0_ISP0 },
 -	{ "imx219 2-0010", "stf_isp0_fw_dump.bin", MIPICSI1_ISP1 },
-+	{ "imx219 4-0010", "stf_isp0_fw_dump.bin", MIPICSI0_ISP0 },
++	{ "imx219 6-0010", "stf_isp0_fw_dump.bin", MIPICSI0_ISP0 },
  };
  
  std::vector<SensorConfig> sensorConfigs;
