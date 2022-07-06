@@ -1,2 +1,0 @@
-# sft-riscvpi-buildroot
-
