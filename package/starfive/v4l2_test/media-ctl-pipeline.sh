@@ -191,33 +191,33 @@ case $interface_type in
 				case $sensor_type in
 					VIN)
 						echo "csiphy0 CSIRX0 vin enable pipeline:"
-						media-ctl -d "$devname" -vl "'stf_csiphy0':1 -> 'stf_csi0':0 [1]"
+						# media-ctl -d "$devname" -vl "'stf_csiphy0':1 -> 'stf_csi0':0 [1]"
 						media-ctl -d "$devname" -vl "'stf_csi0':1 -> 'stf_vin0_wr':0 [1]"
 						;;
 					ISP0)
 						echo "csiphy0 CSIRX0 ISP0 enable pipeline:"
-						media-ctl -d "$devname" -vl "'stf_csiphy0':1 -> 'stf_csi0':0 [1]"
+						# media-ctl -d "$devname" -vl "'stf_csiphy0':1 -> 'stf_csi0':0 [1]"
 						media-ctl -d "$devname" -vl "'stf_csi0':1 -> 'stf_isp0':0 [1]"
 						media-ctl -d "$devname" -vl "'stf_isp0':1 -> 'stf_vin0_isp0':0 [1]"
 						# media-ctl -d "$devname" -vl "'stf_vin0_isp0':1 -> 'stf_vin0_isp0_video1':0 [1]"
 						;;
 					ISP0RAW)
 						echo "csiphy0 CSIRX0 ISP0RAW enable pipeline:"
-						media-ctl -d "$devname" -vl "'stf_csiphy0':1 -> 'stf_csi0':0 [1]"
+						# media-ctl -d "$devname" -vl "'stf_csiphy0':1 -> 'stf_csi0':0 [1]"
 						media-ctl -d "$devname" -vl "'stf_csi0':1 -> 'stf_isp0':0 [1]"
 						media-ctl -d "$devname" -vl "'stf_isp0':6 -> 'stf_vin0_isp0_raw':0 [1]"
 						# media-ctl -d "$devname" -vl "'stf_vin0_isp0':1 -> 'stf_vin0_isp0_video1':0 [1]"
 						;;
 					ISP1)
 						echo "csiphy0 CSIRX0 ISP1 enable pipeline:"
-						media-ctl -d "$devname" -vl "'stf_csiphy0':1 -> 'stf_csi0':0 [1]"
+						# media-ctl -d "$devname" -vl "'stf_csiphy0':1 -> 'stf_csi0':0 [1]"
 						media-ctl -d "$devname" -vl "'stf_csi0':1 -> 'stf_isp1':0 [1]"
 						media-ctl -d "$devname" -vl "'stf_isp1':1 -> 'stf_vin0_isp1':0 [1]"
 						# media-ctl -d "$devname" -vl "'stf_vin0_isp1':1 -> 'stf_vin0_isp1_video2':0 [1]"
 						;;
 					ISP1RAW)
 						echo "csiphy0 CSIRX0 ISP1RAW enable pipeline:"
-						media-ctl -d "$devname" -vl "'stf_csiphy0':1 -> 'stf_csi0':0 [1]"
+						# media-ctl -d "$devname" -vl "'stf_csiphy0':1 -> 'stf_csi0':0 [1]"
 						media-ctl -d "$devname" -vl "'stf_csi0':1 -> 'stf_isp1':0 [1]"
 						media-ctl -d "$devname" -vl "'stf_isp1':1 -> 'stf_vin0_isp1_raw':0 [1]"
 						# media-ctl -d "$devname" -vl "'stf_vin0_isp1':1 -> 'stf_vin0_isp1_video2':0 [1]"
@@ -234,33 +234,33 @@ case $interface_type in
 				case $sensor_type in
 					VIN)
 						echo "csiphy0 CSIRX0 vin disable pipeline:"
-						media-ctl -d "$devname" -vl "'stf_csiphy0':1 -> 'stf_csi0':0 [0]"
+						# media-ctl -d "$devname" -vl "'stf_csiphy0':1 -> 'stf_csi0':0 [0]"
 						media-ctl -d "$devname" -vl "'stf_csi0':1 -> 'stf_vin0_wr':0 [0]"
 						;;
 					ISP0)
 						echo "csiphy0 CSIRX0 ISP0 disable pipeline:"
-						media-ctl -d "$devname" -vl "'stf_csiphy0':1 -> 'stf_csi0':0 [0]"
+						# media-ctl -d "$devname" -vl "'stf_csiphy0':1 -> 'stf_csi0':0 [0]"
 						media-ctl -d "$devname" -vl "'stf_csi0':1 -> 'stf_isp0':0 [0]"
 						media-ctl -d "$devname" -vl "'stf_isp0':1 -> 'stf_vin0_isp0':0 [0]"
 						# media-ctl -d "$devname" -vl "'stf_vin0_isp0':1 -> 'stf_vin0_isp0_video1':0 [0]"
 						;;
 					ISP0RAW)
 						echo "csiphy0 CSIRX0 ISP0RAW disable pipeline:"
-						media-ctl -d "$devname" -vl "'stf_csiphy0':1 -> 'stf_csi0':0 [0]"
+						# media-ctl -d "$devname" -vl "'stf_csiphy0':1 -> 'stf_csi0':0 [0]"
 						media-ctl -d "$devname" -vl "'stf_csi0':1 -> 'stf_isp0':0 [0]"
 						media-ctl -d "$devname" -vl "'stf_isp0':6 -> 'stf_vin0_isp0_raw':0 [0]"
 						# media-ctl -d "$devname" -vl "'stf_vin0_isp0':1 -> 'stf_vin0_isp0_video1':0 [0]"
 						;;
 					ISP1)
 						echo "csiphy0 CSIRX0 ISP1 disable pipeline:"
-						media-ctl -d "$devname" -vl "'stf_csiphy0':1 -> 'stf_csi0':0 [0]"
+						# media-ctl -d "$devname" -vl "'stf_csiphy0':1 -> 'stf_csi0':0 [0]"
 						media-ctl -d "$devname" -vl "'stf_csi0':1 -> 'stf_isp1':0 [0]"
 						media-ctl -d "$devname" -vl "'stf_isp1':1 -> 'stf_vin0_isp1':0 [0]"
 						# media-ctl -d "$devname" -vl "'stf_vin0_isp1':1 -> 'stf_vin0_isp1_video2':0 [0]"
 						;;
 					ISP1RAW)
 						echo "csiphy0 CSIRX0 ISP1RAW disable pipeline:"
-						media-ctl -d "$devname" -vl "'stf_csiphy0':1 -> 'stf_csi0':0 [0]"
+						# media-ctl -d "$devname" -vl "'stf_csiphy0':1 -> 'stf_csi0':0 [0]"
 						media-ctl -d "$devname" -vl "'stf_csi0':1 -> 'stf_isp1':0 [0]"
 						media-ctl -d "$devname" -vl "'stf_isp1':1 -> 'stf_vin0_isp1_raw':0 [0]"
 						# media-ctl -d "$devname" -vl "'stf_vin0_isp1':1 -> 'stf_vin0_isp1_video2':0 [0]"
