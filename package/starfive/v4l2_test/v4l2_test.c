@@ -436,19 +436,19 @@ static int frameRead(void)
         break;
 
     case IO_METHOD_MMAP:
+    {
         stf_v4l2_dequeue_buffer(pv4l2_param, &buf);
         LOG(STF_LEVEL_LOG, "buf.index=%d, n_buffers=%d\n",
                 buf.index, gp_cfg_param->v4l2_param.n_buffers);
         imageProcess((uint8_t *)(pv4l2_param->pBuffers[buf.index].start), dst, buf.timestamp);
         stf_v4l2_queue_buffer(pv4l2_param, buf.index);
         if (STF_DISP_DRM == gp_cfg_param->disp_type) {
-            drmModePageFlip(gp_cfg_param->drm_param.fd, gp_cfg_param->drm_param.dev_head->crtc_id,
-                    gp_cfg_param->drm_param.dev_head->bufs[0].fb_id,
-                    DRM_MODE_PAGE_FLIP_EVENT, gp_cfg_param->drm_param.dev_head);
+            g_drm_buf_next_idx = buf.index;
         }
         LOG(STF_LEVEL_LOG, "buf.index: %d, buf.bytesused=%d\n", buf.index, buf.bytesused);
-        break;
 
+        break;
+    }
     case IO_METHOD_USERPTR:
         stf_v4l2_dequeue_buffer(pv4l2_param, &buf);
         imageProcess((uint8_t *)(buf.m.userptr), dst, buf.timestamp);
@@ -528,6 +528,27 @@ static void page_flip_handler(int fd, unsigned int frame,
                     DRM_MODE_PAGE_FLIP_EVENT, dev);
 }
 
+static void mmap_page_flip_handler(int fd, unsigned int frame,
+            unsigned int sec, unsigned int usec,
+            void *data)
+{
+    uint8_t *dst = NULL;
+    dst = gp_cfg_param->drm_param.dev_head->bufs[0].buf;
+
+    if(g_drm_buf_next_idx != -1) {
+        LOG(STF_LEVEL_TRACE, "Index %d\n", g_drm_buf_curr_idx);
+        /* TODO: write mmap region here instead of in frameRead*/
+
+        g_drm_buf_curr_idx = g_drm_buf_next_idx;
+        g_drm_buf_next_idx = -1;
+    }
+
+    //LOG(STF_LEVEL_TRACE, "page filp index 0 \n");
+    drmModePageFlip(gp_cfg_param->drm_param.fd, gp_cfg_param->drm_param.dev_head->crtc_id,
+                    gp_cfg_param->drm_param.dev_head->bufs[0].fb_id,
+                    DRM_MODE_PAGE_FLIP_EVENT, gp_cfg_param->drm_param.dev_head);
+}
+
 static void mainloop()
 {
     struct v4l2_buffer buf;
@@ -538,14 +559,30 @@ static void mainloop()
     uint32_t nfds = 0;
 
     LOG(STF_LEVEL_TRACE, "Enter\n");
-    if (STF_DISP_FB == gp_cfg_param->disp_type ||
-            IO_METHOD_MMAP == gp_cfg_param->io_mthd) {
-        // fb or (drm + mmap)
+    if (STF_DISP_FB == gp_cfg_param->disp_type) {
+        // fb
         nfds = 1;
         fds = (struct pollfd*)malloc(sizeof(struct pollfd) * nfds);
         memset(fds, 0, sizeof(struct pollfd) * nfds);
         fds[0].fd = gp_cfg_param->v4l2_param.fd;
         fds[0].events = POLLIN;
+
+     } else if (STF_DISP_DRM == gp_cfg_param->disp_type &&
+            IO_METHOD_MMAP == gp_cfg_param->io_mthd) {
+        // drm + mmap
+        nfds = 2;
+        fds = (struct pollfd*)malloc(sizeof(struct pollfd) * nfds);
+        memset(fds, 0, sizeof(struct pollfd) * nfds);
+        fds[0].fd = gp_cfg_param->v4l2_param.fd;
+        fds[0].events = POLLIN;
+        fds[1].fd = gp_cfg_param->drm_param.fd;
+        fds[1].events = POLLIN;
+
+        memset(&ev, 0, sizeof ev);
+        ev.version = DRM_EVENT_CONTEXT_VERSION;
+        ev.vblank_handler = NULL;
+        ev.page_flip_handler = mmap_page_flip_handler;
+
     } else if (STF_DISP_DRM == gp_cfg_param->disp_type &&
             IO_METHOD_DMABUF == gp_cfg_param->io_mthd) {
         // (drm + dmabuf)
@@ -589,12 +626,32 @@ static void mainloop()
             break;
         }
 
-        if (STF_DISP_FB == gp_cfg_param->disp_type ||
-                IO_METHOD_MMAP == gp_cfg_param->io_mthd) {
-            // fb or (drm + mmap)
+        if (STF_DISP_FB == gp_cfg_param->disp_type) {
+            // fb
             if (fds[0].revents & POLLIN) {
                 frameRead();
                 calc_frame_fps();
+            }
+        } else if (STF_DISP_DRM == gp_cfg_param->disp_type &&
+                IO_METHOD_MMAP == gp_cfg_param->io_mthd) {
+            // drm + mmap
+            if (fds[0].revents & POLLIN) {
+                frameRead();
+                calc_frame_fps();
+            }
+
+            if (fds[1].revents & POLLIN) {
+                static struct timespec ts_roll_in;
+                static struct timespec after_handle;
+                clock_gettime(CLOCK_MONOTONIC,&ts_roll_in);
+
+                drmHandleEvent(gp_cfg_param->drm_param.fd, &ev);
+
+                clock_gettime(CLOCK_MONOTONIC,&after_handle);
+                if(ts_roll_in.tv_sec == after_handle.tv_sec){
+                    unsigned long interval = (ts_roll_in.tv_nsec - after_handle.tv_nsec) / 1000;
+                    //LOG(STF_LEVEL_LOG, "drmHandleEvent cost %u us\n", interval);
+                }
             }
         } else if (STF_DISP_DRM == gp_cfg_param->disp_type &&
                 IO_METHOD_DMABUF == gp_cfg_param->io_mthd) {
@@ -618,7 +675,7 @@ static void mainloop()
             count = 3;
         }
 
-        usleep(1 * 1000);
+        //usleep(1 * 1000);
     }
 
     if (fds) {
