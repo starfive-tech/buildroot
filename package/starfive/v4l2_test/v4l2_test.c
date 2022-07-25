@@ -419,6 +419,7 @@ static int frameRead(void)
 
     switch (pv4l2_param->io_mthd) {
     case IO_METHOD_READ:
+    {
         if (-1 == v4l2_read(pv4l2_param->fd, pv4l2_param->pBuffers[0].start,
                 pv4l2_param->pBuffers[0].length)) {
             switch (errno) {
@@ -438,7 +439,7 @@ static int frameRead(void)
         timestamp.tv_usec = ts.tv_nsec/1000;
         imageProcess((uint8_t *)(pv4l2_param->pBuffers[0].start), dst, timestamp);
         break;
-
+    }
     case IO_METHOD_MMAP:
     {
         stf_v4l2_dequeue_buffer(pv4l2_param, &buf);
@@ -447,16 +448,33 @@ static int frameRead(void)
         imageProcess((uint8_t *)(pv4l2_param->pBuffers[buf.index].start), dst, buf.timestamp);
         if (STF_DISP_DRM == gp_cfg_param->disp_type) {
             drm_buf_id = next_index; // Move background buffer to foreground
+            static int first_frame = 1;
+            if(first_frame) {
+                drm_dev_t* dev = gp_cfg_param->drm_param.dev_head;
+                /* First buffer to DRM */
+                if (drmModeSetCrtc(gp_cfg_param->drm_param.fd,
+                                   dev->crtc_id, dev->bufs[drm_buf_id].fb_id,
+                                   0, 0, &dev->conn_id, 1, &dev->mode)) {
+                    fatal("drmModeSetCrtc() failed");
+                }
+                /* First flip */
+                drmModePageFlip(gp_cfg_param->drm_param.fd,
+                                dev->crtc_id, dev->bufs[drm_buf_id].fb_id,
+                                DRM_MODE_PAGE_FLIP_EVENT, dev);
+                first_frame = 0;
+            }
         }
         stf_v4l2_queue_buffer(pv4l2_param, buf.index);
         LOG(STF_LEVEL_LOG, "buf.index: %d, buf.bytesused=%d\n", buf.index, buf.bytesused);
         break;
     }
     case IO_METHOD_USERPTR:
+    {
         stf_v4l2_dequeue_buffer(pv4l2_param, &buf);
         imageProcess((uint8_t *)(buf.m.userptr), dst, buf.timestamp);
         stf_v4l2_queue_buffer(pv4l2_param, buf.index);
         break;
+    }
     case IO_METHOD_DMABUF:
     default:
         break;
@@ -640,6 +658,21 @@ static void mainloop()
             if (fds[0].revents & POLLIN) {
                 int dequeued = stf_v4l2_dequeue_buffer(&gp_cfg_param->v4l2_param, &buf);
                 if (dequeued) {
+                    static int first_frame = 1;
+                    if(first_frame) {
+                        drm_dev_t* dev = gp_cfg_param->drm_param.dev_head;
+                        /* First buffer to DRM */
+                        if (drmModeSetCrtc(gp_cfg_param->drm_param.fd,
+                                        dev->crtc_id, dev->bufs[buf.index].fb_id,
+                                        0, 0, &dev->conn_id, 1, &dev->mode)) {
+                            fatal("drmModeSetCrtc() failed");
+                        }
+                        /* First flip */
+                        drmModePageFlip(gp_cfg_param->drm_param.fd,
+                                        dev->crtc_id, dev->bufs[buf.index].fb_id,
+                                        DRM_MODE_PAGE_FLIP_EVENT, dev);
+                        first_frame = 0;
+                    }
                     g_drm_buf_next_idx = buf.index;
                     frameRead(); // TODO: add support for save file later
                     calc_frame_fps();

@@ -384,17 +384,6 @@ LOG(STF_LEVEL_INFO, "width=%d,height=%d,pitch=%d,bo_handle=%d,fb_id=%d\n",
 
     dev->saved_crtc = drmModeGetCrtc(fd, dev->crtc_id); /* must store crtc data */
 
-    /* First buffer to DRM */
-    if (drmModeSetCrtc(fd, dev->crtc_id, dev->bufs[0].fb_id, 0, 0,
-            &dev->conn_id, 1, &dev->mode)) {
-        fatal("drmModeSetCrtc() failed");
-    }
-
-    /* First flip */
-    drmModePageFlip(fd, dev->crtc_id,
-                        dev->bufs[0].fb_id, DRM_MODE_PAGE_FLIP_EVENT,
-                        dev);
-
     LOG(STF_LEVEL_TRACE, "Exit\n");
 }
 
