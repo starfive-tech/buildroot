@@ -7,14 +7,18 @@
 #include "stf_drm.h"
 #include "stf_log.h"
 
+#define DRM_MODULE_NAME "starfive"
+#define DRM_BUSID NULL
+
 static int drm_open(const char *path, int need_dumb, int need_prime)
 {
     int fd, flags;
     uint64_t has_it;
 
     LOG(STF_LEVEL_TRACE, "Enter\n");
-    if ((fd = open(path, O_RDWR)) < 0) {
-        LOG(STF_LEVEL_ERR, "cannot open \"%s\"\n", path);
+    fd = drmOpen(DRM_MODULE_NAME, DRM_BUSID);
+    if (fd < 0) {
+        LOG(STF_LEVEL_ERR, "cannot open drm module starfive. \n");
         error("open");
     }
 
