@@ -568,7 +568,8 @@ static void mainloop()
     uint32_t nfds = 0;
 
     LOG(STF_LEVEL_TRACE, "Enter\n");
-    if (STF_DISP_FB == gp_cfg_param->disp_type) {
+    if (STF_DISP_FB == gp_cfg_param->disp_type ||
+        STF_DISP_NONE == gp_cfg_param->disp_type) {
         // fb
         nfds = 1;
         fds = (struct pollfd*)malloc(sizeof(struct pollfd) * nfds);
@@ -577,7 +578,7 @@ static void mainloop()
         fds[0].events = POLLIN;
 
      } else if (STF_DISP_DRM == gp_cfg_param->disp_type &&
-            IO_METHOD_MMAP == gp_cfg_param->io_mthd) {
+                IO_METHOD_MMAP == gp_cfg_param->io_mthd) {
         // drm + mmap
         nfds = 2;
         fds = (struct pollfd*)malloc(sizeof(struct pollfd) * nfds);
@@ -593,7 +594,7 @@ static void mainloop()
         ev.page_flip_handler = mmap_page_flip_handler;
 
     } else if (STF_DISP_DRM == gp_cfg_param->disp_type &&
-            IO_METHOD_DMABUF == gp_cfg_param->io_mthd) {
+               IO_METHOD_DMABUF == gp_cfg_param->io_mthd) {
         // (drm + dmabuf)
         nfds = 2;
         fds = (struct pollfd*)malloc(sizeof(struct pollfd) * nfds);
@@ -635,14 +636,15 @@ static void mainloop()
             break;
         }
 
-        if (STF_DISP_FB == gp_cfg_param->disp_type) {
+        if (STF_DISP_FB == gp_cfg_param->disp_type ||
+            STF_DISP_NONE == gp_cfg_param->disp_type) {
             // fb
             if (fds[0].revents & POLLIN) {
                 frameRead();
                 calc_frame_fps();
             }
         } else if (STF_DISP_DRM == gp_cfg_param->disp_type &&
-                IO_METHOD_MMAP == gp_cfg_param->io_mthd) {
+                   IO_METHOD_MMAP == gp_cfg_param->io_mthd) {
             // drm + mmap
             if (fds[0].revents & POLLIN) {
                 frameRead();
@@ -653,7 +655,7 @@ static void mainloop()
                 drmHandleEvent(gp_cfg_param->drm_param.fd, &ev);
             }
         } else if (STF_DISP_DRM == gp_cfg_param->disp_type &&
-                IO_METHOD_DMABUF == gp_cfg_param->io_mthd) {
+                   IO_METHOD_DMABUF == gp_cfg_param->io_mthd) {
             // drm + dmabuf
             if (fds[0].revents & POLLIN) {
                 int dequeued = stf_v4l2_dequeue_buffer(&gp_cfg_param->v4l2_param, &buf);
