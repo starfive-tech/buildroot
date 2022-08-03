@@ -167,6 +167,7 @@ config BR2_ROOTFS_DEVICE_CREATION_DYNAMIC_DEVTMPFS
 config BR2_ROOTFS_DEVICE_CREATION_DYNAMIC_MDEV
 	bool "Dynamic using devtmpfs + mdev"
 	select BR2_PACKAGE_BUSYBOX
+	select BR2_PACKAGE_EUDEV
 
 config BR2_ROOTFS_DEVICE_CREATION_DYNAMIC_EUDEV
 	bool "Dynamic using devtmpfs + eudev"
