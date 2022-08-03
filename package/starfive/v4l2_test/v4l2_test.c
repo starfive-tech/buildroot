@@ -614,7 +614,9 @@ static void mainloop()
         exit(EXIT_FAILURE);
     }
 
-    if (!gp_cfg_param->rec_fp && gp_cfg_param->jpegFilename) {
+    if (!gp_cfg_param->rec_fp &&
+       gp_cfg_param->jpegFilename &&
+       !is_raw_v4l2fmt(gp_cfg_param->v4l2_param.format)) {
         gp_cfg_param->rec_fp = fopen(gp_cfg_param->jpegFilename, "w+");
         if (!gp_cfg_param->rec_fp) {
             LOG(STF_LEVEL_ERR, "can't open %s\n", gp_cfg_param->jpegFilename);

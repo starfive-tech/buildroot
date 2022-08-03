@@ -80,7 +80,7 @@ extern void jpegWrite(unsigned char* img, char* jpegFilename,
         uint32_t width, uint32_t height, int jpegQuality);
 extern int write_JPEG_file(char * filename,unsigned char *image_buffer,
         int image_width, int image_height, int quality);
-
+extern int is_raw_v4l2fmt(uint32_t format);
 // inline int clip(int value, int min, int max) {
 //     return (value > max ? max : value < min ? min : value);
 // }

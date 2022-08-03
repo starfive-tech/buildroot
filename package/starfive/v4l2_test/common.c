@@ -33,6 +33,25 @@ void dump_fourcc(uint32_t fourcc)
         fourcc >> 24);
 }
 
+int is_raw_v4l2fmt(uint32_t format)
+{
+    int ret;
+
+    switch (format) {
+    case V4L2_PIX_FMT_SRGGB12:
+    case V4L2_PIX_FMT_SGRBG12:
+    case V4L2_PIX_FMT_SGBRG12:
+    case V4L2_PIX_FMT_SBGGR12:
+        ret = 1;
+        break;
+    default:
+        ret = 0;
+        break;
+    }
+
+    return ret;
+}
+
 // convert v4l2 format to fb format
 int v4l2fmt_to_fbfmt(uint32_t format)
 {
