@@ -351,6 +351,13 @@ config BR2_PACKAGE_MESA3D_DRI_DRIVER_RADEON
 	help
 	  Legacy Radeon driver for R100 series GPUs.
 
+config BR2_PACKAGE_MESA3D_DRI_DRIVER_PVR
+        bool "DRI pvr driver"
+	depends on BR2_PACKAGE_IMG_GPU_POWERVR
+        select BR2_PACKAGE_MESA3D_DRI_DRIVER
+        help
+          Support for Imagination PowerVR GPUs.
+
 comment "Vulkan drivers"
 
 config BR2_PACKAGE_MESA3D_VULKAN_DRIVER_INTEL
