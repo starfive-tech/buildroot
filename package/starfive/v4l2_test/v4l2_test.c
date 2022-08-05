@@ -540,7 +540,7 @@ static void page_flip_handler(int fd, unsigned int frame,
     /* If we have a next buffer, then let's return the current one,
         * and grab the next one.
         */
-    if (g_drm_buf_next_idx > 0) {
+    if (g_drm_buf_next_idx >= 0) {
         stf_v4l2_queue_buffer(&gp_cfg_param->v4l2_param, g_drm_buf_curr_idx);
         g_drm_buf_curr_idx = g_drm_buf_next_idx;
         g_drm_buf_next_idx = -1;
@@ -675,15 +675,17 @@ static void mainloop()
                         drmModePageFlip(gp_cfg_param->drm_param.fd,
                                         dev->crtc_id, dev->bufs[buf.index].fb_id,
                                         DRM_MODE_PAGE_FLIP_EVENT, dev);
+                        g_drm_buf_curr_idx = buf.index;
                         first_frame = 0;
+                    } else {
+                        g_drm_buf_next_idx = buf.index;
                     }
-                    g_drm_buf_next_idx = buf.index;
                     frameRead(); // TODO: add support for save file later
                     calc_frame_fps();
                 }
             }
             if (fds[1].revents & POLLIN) {
-                if (g_drm_buf_next_idx > 0) {
+                if (g_drm_buf_next_idx >= 0) {
                     drmHandleEvent(gp_cfg_param->drm_param.fd, &ev);
                 }
             }
