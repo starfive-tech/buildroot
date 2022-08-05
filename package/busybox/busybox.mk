@@ -145,6 +145,8 @@ endef
 define BUSYBOX_INSTALL_MDEV_CONF
 	$(INSTALL) -D -m 0644 package/busybox/mdev.conf \
 		$(TARGET_DIR)/etc/mdev.conf
+	$(INSTALL) -D -m 0644 package/busybox/blacklist.conf \
+		$(TARGET_DIR)/etc/modprobe.d/blacklist.conf
 endef
 define BUSYBOX_SET_MDEV
 	$(call KCONFIG_ENABLE_OPT,CONFIG_MDEV)
