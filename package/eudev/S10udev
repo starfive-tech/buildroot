@@ -56,9 +56,9 @@ create_dev_makedev() {
 
 make_static_nodes() {
     [ -e /lib/modules/$(uname -r)/modules.devname ] || return 0
-    [ -x /bin/kmod ] || return 0
+    [ -x /usr/bin/kmod ] || return 0
 
-    /bin/kmod static-nodes --format=tmpfiles --output=/proc/self/fd/1 | \
+    /usr/bin/kmod static-nodes --format=tmpfiles --output=/proc/self/fd/1 | \
     while read type name mode uid gid age arg; do
         [ -e $name ] && continue
         case "$type" in
@@ -66,10 +66,6 @@ make_static_nodes() {
             d|d!) mkdir $name ;;
             *) echo "unparseable line ($type $name $mode $uid $gid $age $arg)" >&2 ;;
         esac
-
-        if [ -x /sbin/restorecon ]; then
-            /sbin/restorecon $name
-        fi
     done
 }
 
@@ -84,9 +80,6 @@ case "$1" in
 
         # clean up parts of the database created by the initramfs udev
         udevadm info --cleanup-db
-
-        # set the SELinux context for devices created in the initramfs
-        [ -x /sbin/restorecon ] && /sbin/restorecon -R /dev
 
         printf "Populating %s using udev: " "${udev_root:-/dev}"
         [ -e /proc/sys/kernel/hotplug ] && printf '\000\000\000\000' > /proc/sys/kernel/hotplug
