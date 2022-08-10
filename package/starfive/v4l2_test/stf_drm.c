@@ -107,8 +107,8 @@ static struct drm_dev_t *drm_find_dev(int fd, uint32_t width, uint32_t height)
             /* FIXME: use default encoder/crtc pair */
             if ((enc = drmModeGetEncoder(fd, dev->enc_id)) == NULL)
                 fatal("drmModeGetEncoder() faild");
-            if (enc->crtc_id) {
-                dev->crtc_id = enc->crtc_id;
+            if (enc->possible_clones == 2) {
+                dev->crtc_id = res->crtcs[1];
             } else {
                 dev->crtc_id = res->crtcs[0];
             }
@@ -425,6 +425,16 @@ static void drm_destroy(int fd, struct drm_dev_t *dev_head)
     drmClose(fd);
     LOG(STF_LEVEL_TRACE, "Exit\n");
 }
+static struct drm_dev_t *drm_find_connector(DRMParam_t *param, drm_dev_t *dev)
+{
+    drm_dev_t *tmp_dev = NULL;
+
+    for (tmp_dev = dev; tmp_dev != NULL; tmp_dev = dev->next) {
+        if (param->connector_id == tmp_dev->conn_id && param->connector_id != 0)
+            return tmp_dev;
+    }
+    return dev;
+}
 
 void stf_drm_open(DRMParam_t *param, char *device_name, int iomthd)
 {
@@ -458,6 +468,7 @@ void stf_drm_init(DRMParam_t *param, uint32_t width, uint32_t height,
         exit (EXIT_FAILURE);
     }
 
+    dev_head = drm_find_connector(param, dev_head);
     dev_head->drm_format = v4l2fmt_to_drmfmt(v4l2_fmt);
 
     if (IO_METHOD_MMAP == iomthd) {
