@@ -24,7 +24,7 @@ fi
 
 mount -t sysfs sysfs /sys
 
-mdev -s
+mount -t devtmpfs -o nosuid,mode=0755 devtmpfs /dev
 
 mkdir -p /dev/pts
 mkdir -p /dev/shm
@@ -53,6 +53,7 @@ mount -n -o move /proc /rootfs/proc
 mount -n -o move /sys /rootfs/sys
 mount -n -o move /run /rootfs/run
 mount -n -o move /tmp /rootfs/tmp
+mount -n -o move /dev /rootfs/dev
 mount -n -o move /dev/shm /rootfs/dev/shm
 mount -n -o move /dev/pts /rootfs/dev/pts
 

@@ -4,7 +4,7 @@
 # Buildroot's default inittab for BusyBox.
 id:3:initdefault:
 
-si0::sysinit:/bin/mount -t proc proc /proc
+# si0::sysinit:/bin/mount -t proc proc /proc
 si1::sysinit:/bin/mount -o remount,rw /
 si2::sysinit:/bin/mkdir -p /dev/pts /dev/shm
 si3::sysinit:/bin/mount -a
