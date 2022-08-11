@@ -57,4 +57,5 @@ mount -n -o move /dev /rootfs/dev
 mount -n -o move /dev/shm /rootfs/dev/shm
 mount -n -o move /dev/pts /rootfs/dev/pts
 
-exec chroot /rootfs $init 3
+exec run-init /rootfs "${init}" "$@" <"/rootfs/dev/console" >"/rootfs/dev/console" 2>&1
+echo "Something went badly wrong in the initramfs."
