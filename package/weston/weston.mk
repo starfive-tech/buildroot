@@ -164,4 +164,12 @@ else
 WESTON_CONF_OPTS += -Ddemo-clients=false
 endif
 
+define WESTON_INSTALL_CONF_ON_TARGET
+	$(INSTALL) -D -m 0644 package/weston/weston.ini $(TARGET_DIR)/etc/xdg/weston/weston.ini
+	$(INSTALL) -D -m 0644 package/weston/Compose $(TARGET_DIR)/root/.config/XCompose
+	$(INSTALL) -D -m 0755 package/weston/run_weston.sh $(TARGET_DIR)/root/run_weston.sh
+endef
+
+WESTON_POST_INSTALL_TARGET_HOOKS += WESTON_INSTALL_CONF_ON_TARGET
+
 $(eval $(meson-package))
