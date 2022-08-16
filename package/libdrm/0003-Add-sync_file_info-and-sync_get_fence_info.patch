@@ -1,7 +1,7 @@
-From a12e3b4490c182ed506f59eda01f1bd0919720f1 Mon Sep 17 00:00:00 2001
+From 5a7d3c0c8d59cf4e9bb70f8d498bbe1fe2dbc69d Mon Sep 17 00:00:00 2001
 From: Brendan King <Brendan.King@imgtec.com>
 Date: Mon, 9 Mar 2020 14:52:17 +0000
-Subject: [PATCH 6/6] Add sync_file_info and sync_get_fence_info
+Subject: [PATCH 3/3] Add sync_file_info and sync_get_fence_info
 
 For pre-4.7 kernels, sync_file_info calls the SYNC_IOC_FENCE_INFO ioctl,
 and converts the data to SYNC_IOC_FILE_INFO form. For newer kernels,
@@ -12,11 +12,11 @@ which added legacy sync info support, using the structure and ioctl
 definitions at the top of the patch, as well as the sync_pt_info
 function.
 ---
- libsync.h | 117 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ libsync.h | 117 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
  1 file changed, 117 insertions(+)
 
 diff --git a/libsync.h b/libsync.h
-index 44f7330..54acb6f 100644
+index 44f7330d..54acb6fa 100644
 --- a/libsync.h
 +++ b/libsync.h
 @@ -351,6 +351,123 @@ static inline void sync_fence_info_free(struct sync_fence_info_data *info)
@@ -144,5 +144,5 @@ index 44f7330..54acb6f 100644
  }
  #endif
 -- 
-2.7.4
+2.25.1
 
