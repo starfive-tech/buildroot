@@ -1,7 +1,7 @@
-From b9cce4ff02e66d6db913cd10352af61d3d81d9ad Mon Sep 17 00:00:00 2001
+From 1f4a1a21384b00e28b8a9dd2c29f9c261f201c6f Mon Sep 17 00:00:00 2001
 From: Brendan King <Brendan.King@imgtec.com>
 Date: Thu, 23 Nov 2017 15:50:21 +0000
-Subject: [PATCH 24/50] dri: use a supported API in driCreateNewContext
+Subject: [PATCH 23/67] dri: use a supported API in driCreateNewContext
 
 Don't assume the screen supports OpenGL when creating a new context,
 use an API that the screen supports.
@@ -50,5 +50,5 @@ index caed5fa6a68..6c45eb007fc 100644
  }
  
 -- 
-2.17.1
+2.25.1
 

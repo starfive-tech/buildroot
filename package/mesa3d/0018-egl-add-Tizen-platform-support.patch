@@ -1,12 +1,12 @@
-From bbef8a8f66f7f5ac6714a2d3f77a323a2d38a493 Mon Sep 17 00:00:00 2001
+From a2fea4d0fb40d7bdfd2a3860132c37288f3d7864 Mon Sep 17 00:00:00 2001
 From: Frank Binns <frank.binns@imgtec.com>
 Date: Fri, 6 Jan 2017 16:35:00 +0000
-Subject: [PATCH 19/50] egl: add Tizen platform support
+Subject: [PATCH 18/67] egl: add Tizen platform support
 
 Add a new "tizen" platform to support drm/gbm and Wayland on Tizen.
 The platform can be enabled by passing "-Dplatforms=tizen" to Meson.
 ---
- meson.build                           |  27 +-
+ meson.build                           |  25 +-
  meson_options.txt                     |   2 +-
  src/egl/drivers/dri2/egl_dri2.c       | 182 ++++-
  src/egl/drivers/dri2/egl_dri2.h       |  59 +-
@@ -15,15 +15,15 @@ The platform can be enabled by passing "-Dplatforms=tizen" to Meson.
  src/egl/main/egldisplay.c             |  32 +-
  src/egl/main/egldisplay.h             |   7 +
  src/egl/main/egllog.c                 |  27 +-
- src/egl/meson.build                   |   9 +-
- 10 files changed, 1316 insertions(+), 16 deletions(-)
+ src/egl/meson.build                   |   7 +-
+ 10 files changed, 1313 insertions(+), 15 deletions(-)
  create mode 100644 src/egl/drivers/dri2/platform_tizen.c
 
 diff --git a/meson.build b/meson.build
-index 15e08dfea1c..c90e44254d2 100644
+index 968b4f5f499..3d9d345dbf2 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -346,6 +346,11 @@ with_platform_x11 = _platforms.contains('x11')
+@@ -358,6 +358,11 @@ with_platform_x11 = _platforms.contains('x11')
  with_platform_wayland = _platforms.contains('wayland')
  with_platform_haiku = _platforms.contains('haiku')
  with_platform_windows = _platforms.contains('windows')
@@ -33,18 +33,18 @@ index 15e08dfea1c..c90e44254d2 100644
 +  error('tizen cannot be enabled at the same time as other platforms')
 +endif
  
- if _platforms.length() != 0
-   egl_native_platform = _platforms[0]
-@@ -859,7 +864,7 @@ else
+ with_glx = get_option('glx')
+ if with_glx == 'auto'
+@@ -910,7 +915,7 @@ else
    pre_args += '-DEGL_NO_X11'
    gl_pkgconfig_c_flags += '-DEGL_NO_X11'
  endif
--if with_gbm
-+if with_gbm and not with_platform_tizen
+-if with_gbm and not with_platform_android
++if with_gbm and not with_platform_android and not with_platform_tizen
    pre_args += '-DHAVE_DRM_PLATFORM'
  endif
  
-@@ -889,6 +894,15 @@ endif
+@@ -944,6 +949,15 @@ endif
  if with_platform_haiku
    pre_args += '-DHAVE_HAIKU_PLATFORM'
  endif
@@ -60,7 +60,7 @@ index 15e08dfea1c..c90e44254d2 100644
  
  prog_python = import('python').find_installation('python3')
  has_mako = run_command(
-@@ -1487,7 +1501,8 @@ with_gallium_drisw_kms = false
+@@ -1568,7 +1582,8 @@ with_gallium_drisw_kms = false
  dep_libdrm = dependency(
    'libdrm', version : '>=' + _drm_ver,
    # GNU/Hurd includes egl_dri2, without drm.
@@ -70,23 +70,21 @@ index 15e08dfea1c..c90e44254d2 100644
  )
  if dep_libdrm.found()
    pre_args += '-DHAVE_LIBDRM'
-@@ -2028,9 +2043,11 @@ if with_egl
+@@ -2187,8 +2202,10 @@ if with_egl
+   lines += 'EGL drivers:     ' + ' '.join(egl_drivers)
  endif
- lines += 'GBM:             ' + (with_gbm ? 'yes' : 'no')
  if with_egl or with_any_vk
 -  _platforms += 'surfaceless'
--  if with_gbm
--    _platforms += 'drm'
+-  if with_gbm and not with_platform_android
 +  if not with_platform_tizen
 +    _platforms += 'surfaceless'
-+    if with_gbm
-+      _platforms += 'drm'
-+    endif
++  endif
++  if with_gbm and not with_platform_android and not with_platform_tizen
+     _platforms += 'drm'
    endif
    lines += 'EGL/Vulkan/VL platforms:   ' + ' '.join(_platforms)
- endif
 diff --git a/meson_options.txt b/meson_options.txt
-index 6f001343ae6..b2ba2d8d979 100644
+index dac791099a1..8230db93c70 100644
 --- a/meson_options.txt
 +++ b/meson_options.txt
 @@ -23,7 +23,7 @@ option(
@@ -99,10 +97,10 @@ index 6f001343ae6..b2ba2d8d979 100644
    description : 'window systems to support. If this is set to `auto`, all platforms applicable will be enabled.'
  )
 diff --git a/src/egl/drivers/dri2/egl_dri2.c b/src/egl/drivers/dri2/egl_dri2.c
-index a47589d929f..e9f745e4258 100644
+index dea5899b3a8..6d34395d65d 100644
 --- a/src/egl/drivers/dri2/egl_dri2.c
 +++ b/src/egl/drivers/dri2/egl_dri2.c
-@@ -1208,6 +1208,11 @@ dri2_initialize(_EGLDisplay *disp)
+@@ -1179,6 +1179,11 @@ dri2_initialize(_EGLDisplay *disp)
     case _EGL_PLATFORM_ANDROID:
        ret = dri2_initialize_android(disp);
        break;
@@ -114,7 +112,7 @@ index a47589d929f..e9f745e4258 100644
     default:
        unreachable("Callers ensure we cannot get here.");
        return EGL_FALSE;
-@@ -1282,6 +1287,12 @@ dri2_display_destroy(_EGLDisplay *disp)
+@@ -1253,6 +1258,12 @@ dri2_display_destroy(_EGLDisplay *disp)
     case _EGL_PLATFORM_WAYLAND:
        dri2_teardown_wayland(dri2_dpy);
        break;
@@ -127,7 +125,7 @@ index a47589d929f..e9f745e4258 100644
     default:
        /* TODO: add teardown for other platforms */
        break;
-@@ -2322,8 +2333,96 @@ dri2_create_image_khr_renderbuffer(_EGLDisplay *disp, _EGLContext *ctx,
+@@ -2293,8 +2304,96 @@ dri2_create_image_khr_renderbuffer(_EGLDisplay *disp, _EGLContext *ctx,
     return dri2_create_image_from_dri(disp, dri_image);
  }
  
@@ -225,7 +223,7 @@ index a47589d929f..e9f745e4258 100644
  /* This structure describes how a wl_buffer maps to one or more
   * __DRIimages.  A wl_drm_buffer stores the wl_drm format code and the
   * offsets and strides of the planes in the buffer.  This table maps a
-@@ -3216,6 +3315,10 @@ dri2_create_image_khr(_EGLDisplay *disp, _EGLContext *ctx, EGLenum target,
+@@ -3193,6 +3292,10 @@ dri2_create_image_khr(_EGLDisplay *disp, _EGLContext *ctx, EGLenum target,
  #ifdef HAVE_WAYLAND_PLATFORM
     case EGL_WAYLAND_BUFFER_WL:
        return dri2_create_image_wayland_wl_buffer(disp, ctx, buffer, attr_list);
@@ -236,7 +234,7 @@ index a47589d929f..e9f745e4258 100644
  #endif
     case EGL_CL_IMAGE_IMG:
        return dri2_create_image_img_buffer(disp, ctx, target, buffer, attr_list);
-@@ -3237,6 +3340,78 @@ dri2_destroy_image_khr(_EGLDisplay *disp, _EGLImage *image)
+@@ -3214,6 +3317,78 @@ dri2_destroy_image_khr(_EGLDisplay *disp, _EGLImage *image)
     return EGL_TRUE;
  }
  
@@ -315,7 +313,7 @@ index a47589d929f..e9f745e4258 100644
  #ifdef HAVE_WAYLAND_PLATFORM
  
  static void
-@@ -3767,6 +3942,11 @@ const _EGLDriver _eglDriver = {
+@@ -3755,6 +3930,11 @@ const _EGLDriver _eglDriver = {
     .BindWaylandDisplayWL = dri2_bind_wayland_display_wl,
     .UnbindWaylandDisplayWL = dri2_unbind_wayland_display_wl,
     .QueryWaylandBufferWL = dri2_query_wayland_buffer_wl,
@@ -328,10 +326,10 @@ index a47589d929f..e9f745e4258 100644
     .GetSyncValuesCHROMIUM = dri2_get_sync_values_chromium,
     .CreateSyncKHR = dri2_create_sync,
 diff --git a/src/egl/drivers/dri2/egl_dri2.h b/src/egl/drivers/dri2/egl_dri2.h
-index d7f9696da93..4d66936da28 100644
+index 6a7eedea112..a8bfe45b1f5 100644
 --- a/src/egl/drivers/dri2/egl_dri2.h
 +++ b/src/egl/drivers/dri2/egl_dri2.h
-@@ -62,13 +62,19 @@ struct zwp_linux_dmabuf_v1;
+@@ -62,9 +62,9 @@ struct zwp_linux_dmabuf_v1;
  #include <gbm_driint.h>
  #endif
  
@@ -339,8 +337,11 @@ index d7f9696da93..4d66936da28 100644
  #define LOG_TAG "EGL-DRI2"
  
 +#ifdef HAVE_ANDROID_PLATFORM
- #include <system/window.h>
  #include <hardware/gralloc.h>
+ 
+ #if ANDROID_API_LEVEL >= 26
+@@ -75,6 +75,12 @@ struct zwp_linux_dmabuf_v1;
+ 
  #endif /* HAVE_ANDROID_PLATFORM */
  
 +#ifdef HAVE_TIZEN_PLATFORM
@@ -352,7 +353,7 @@ index d7f9696da93..4d66936da28 100644
  #include "eglconfig.h"
  #include "eglcontext.h"
  #include "egldevice.h"
-@@ -251,6 +257,10 @@ struct dri2_egl_display
+@@ -259,6 +265,10 @@ struct dri2_egl_display
  
     bool                      is_render_node;
     bool                      is_different_gpu;
@@ -363,7 +364,7 @@ index d7f9696da93..4d66936da28 100644
  };
  
  struct dri2_egl_context
-@@ -268,6 +278,18 @@ enum wayland_buffer_type {
+@@ -276,6 +286,18 @@ enum wayland_buffer_type {
  };
  #endif
  
@@ -382,7 +383,7 @@ index d7f9696da93..4d66936da28 100644
  struct dri2_egl_surface
  {
     _EGLSurface          base;
-@@ -300,15 +322,33 @@ struct dri2_egl_surface
+@@ -308,15 +330,33 @@ struct dri2_egl_surface
     struct gbm_dri_surface *gbm_surf;
  #endif
  
@@ -418,7 +419,7 @@ index d7f9696da93..4d66936da28 100644
        /* for is_different_gpu case. NULL else */
        __DRIimage         *linear_copy;
        /* for swrast */
-@@ -317,6 +357,9 @@ struct dri2_egl_surface
+@@ -325,6 +365,9 @@ struct dri2_egl_surface
  #endif
  #ifdef HAVE_DRM_PLATFORM
        struct gbm_bo       *bo;
@@ -428,7 +429,7 @@ index d7f9696da93..4d66936da28 100644
  #endif
        bool                locked;
        int                 age;
-@@ -516,6 +559,11 @@ dri2_initialize_android(_EGLDisplay *disp)
+@@ -525,6 +568,11 @@ dri2_initialize_android(_EGLDisplay *disp)
  EGLBoolean
  dri2_initialize_surfaceless(_EGLDisplay *disp);
  
@@ -440,7 +441,7 @@ index d7f9696da93..4d66936da28 100644
  EGLBoolean
  dri2_initialize_device(_EGLDisplay *disp);
  static inline void
-@@ -550,6 +598,11 @@ dri2_set_WL_bind_wayland_display(_EGLDisplay *disp)
+@@ -559,6 +607,11 @@ dri2_set_WL_bind_wayland_display(_EGLDisplay *disp)
  #endif
  }
  
@@ -1439,7 +1440,7 @@ index 00000000000..a08bc8c07bf
 +   return EGL_FALSE;
 +}
 diff --git a/src/egl/main/eglapi.c b/src/egl/main/eglapi.c
-index bc7014ef8ed..4c29eedb684 100644
+index 234449adf64..43c7b917909 100644
 --- a/src/egl/main/eglapi.c
 +++ b/src/egl/main/eglapi.c
 @@ -416,6 +416,13 @@ _eglGetPlatformDisplayCommon(EGLenum platform, void *native_display,
@@ -1606,21 +1607,19 @@ index 6a91952577f..973b7600ab1 100644
  
  
 diff --git a/src/egl/meson.build b/src/egl/meson.build
-index 599a66706b7..17e9c690b82 100644
+index ab8f4e1fdbe..5749ec88f89 100644
 --- a/src/egl/meson.build
 +++ b/src/egl/meson.build
-@@ -106,7 +106,9 @@ if with_dri2
+@@ -106,7 +106,7 @@ if with_dri2
+     endif
      deps_for_egl += [dep_x11_xcb, dep_xcb_dri2, dep_xcb_xfixes]
    endif
-   if with_gbm
--    files_egl += files('drivers/dri2/platform_drm.c')
-+    if not with_platform_tizen
-+      files_egl += files('drivers/dri2/platform_drm.c')
-+    endif
+-  if with_gbm and not with_platform_android
++  if with_gbm and not with_platform_android and not with_platform_tizen
+     files_egl += files('drivers/dri2/platform_drm.c')
      link_for_egl += libgbm
      incs_for_egl += [inc_gbm, include_directories('../gbm/main')]
-     deps_for_egl += dep_libdrm
-@@ -135,6 +137,11 @@ elif with_platform_haiku
+@@ -141,6 +141,11 @@ elif with_platform_haiku
    link_for_egl += libgl
    deps_for_egl += cpp.find_library('be')
  endif
@@ -1633,5 +1632,5 @@ index 599a66706b7..17e9c690b82 100644
  if cc.has_function('mincore')
    c_args_for_egl += '-DHAVE_MINCORE'
 -- 
-2.17.1
+2.25.1
 

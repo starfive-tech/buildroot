@@ -1,7 +1,7 @@
-From 7065e8e6bc0c3674ae310468b95cef1d538f5f03 Mon Sep 17 00:00:00 2001
+From 02065d490a68d542be56c2ea23346b3fa19928cb Mon Sep 17 00:00:00 2001
 From: Silvestrs Timofejevs <silvestrs.timofejevs@imgtec.com>
 Date: Mon, 24 Sep 2018 14:14:25 +0100
-Subject: [PATCH 38/50] egl: add config debug printout
+Subject: [PATCH 37/67] egl: add config debug printout
 
 Feature to print out EGL returned configs for debug purposes.
 
@@ -10,32 +10,16 @@ enabled when the log level equals '_EGL_DEBUG'. The configs are
 printed, and if any of them are "chosen" they are marked with their
 index in the chosen configs array.
 ---
- src/egl/Makefile.sources      |   4 +-
  src/egl/main/eglconfig.c      |  20 ++-
- src/egl/main/eglconfigdebug.c | 276 ++++++++++++++++++++++++++++++++++
- src/egl/main/eglconfigdebug.h |  55 +++++++
- src/egl/main/egllog.c         |   9 ++
+ src/egl/main/eglconfigdebug.c | 321 ++++++++++++++++++++++++++++++++++
+ src/egl/main/eglconfigdebug.h |  55 ++++++
+ src/egl/main/egllog.c         |   9 +
  src/egl/main/egllog.h         |   4 +
  src/egl/meson.build           |   2 +
- 7 files changed, 365 insertions(+), 5 deletions(-)
+ 6 files changed, 407 insertions(+), 4 deletions(-)
  create mode 100644 src/egl/main/eglconfigdebug.c
  create mode 100644 src/egl/main/eglconfigdebug.h
 
-diff --git a/src/egl/Makefile.sources b/src/egl/Makefile.sources
-index 5f5b6d27e64..d757ba9bed4 100644
---- a/src/egl/Makefile.sources
-+++ b/src/egl/Makefile.sources
-@@ -25,7 +25,9 @@ LIBEGL_C_FILES := \
- 	main/eglsync.c \
- 	main/eglsync.h \
- 	main/eglentrypoint.h \
--	main/egltypedefs.h
-+	main/egltypedefs.h \
-+	main/eglconfigdebug.h \
-+	main/eglconfigdebug.c
- 
- dri2_backend_core_FILES := \
- 	drivers/dri2/egl_dri2.c \
 diff --git a/src/egl/main/eglconfig.c b/src/egl/main/eglconfig.c
 index 5e56948ab72..ea4b3c15f3f 100644
 --- a/src/egl/main/eglconfig.c
@@ -86,10 +70,10 @@ index 5e56948ab72..ea4b3c15f3f 100644
  }
 diff --git a/src/egl/main/eglconfigdebug.c b/src/egl/main/eglconfigdebug.c
 new file mode 100644
-index 00000000000..13e0a8bc350
+index 00000000000..92ac41a5614
 --- /dev/null
 +++ b/src/egl/main/eglconfigdebug.c
-@@ -0,0 +1,276 @@
+@@ -0,0 +1,321 @@
 +/*
 + * Copyright 2017 Imagination Technologies.
 + * All Rights Reserved.
@@ -144,6 +128,8 @@ index 00000000000..13e0a8bc350
 +   EGLint vid, vtype, caveat, bindRgb, bindRgba;
 +   EGLint samples, sampleBuffers;
 +   char surfString[100];
++   EGLint colorBufferType;
++   EGLint numPlanes, subsample, order;
 +};
 +
 +static void
@@ -158,7 +144,7 @@ index 00000000000..13e0a8bc350
 +    * bfsz ----------------- EGL_BUFFER_SIZE
 +    * lvl ------------------ EGL_LEVEL
 +    *
-+    * colourbuffer
++    * color size
 +    * r -------------------- EGL_RED_SIZE
 +    * g -------------------- EGL_GREEN_SIZE
 +    * b -------------------- EGL_BLUE_SIZE
@@ -178,11 +164,19 @@ index 00000000000..13e0a8bc350
 +    *
 +    * supported
 +    * surfaces ------------- EGL_SURFACE_TYPE
++    * colbuf --------------- EGL_COLOR_BUFFER_TYPE
++    *
++    * yuv
++    * p -------------------- EGL_YUV_NUMBER_OF_PLANES_EXT
++    * sub ------------------ EGL_YUV_SUBSAMPLE_EXT
++    * ord ------------------ EGL_YUV_ORDER_EXT
 +    */
 +   _eglLog(_EGL_DEBUG, "---------------");
 +   _eglLog(_EGL_DEBUG, "Configurations:");
-+   _eglLog(_EGL_DEBUG, "cho       bf lv colourbuffer dp st  ms           vis  cav  bi     renderable           supported");
-+   _eglLog(_EGL_DEBUG, "sen    id sz  l  r  g  b  a  th cl ns b           id  eat  nd  gl es es2 es3 vg         surfaces");
++   _eglLog(_EGL_DEBUG, "cho       bf lv  color size  dp st  ms           vis  cav  bi     renderable           supported"
++           " col     yuv    ");
++   _eglLog(_EGL_DEBUG, "sen    id sz  l  r  g  b  a  th cl ns b           id  eat  nd  gl es es2 es3 vg         surfaces"
++           " buf p sub  ord");
 +   _eglLog(_EGL_DEBUG, "---------------");
 +}
 +
@@ -197,6 +191,26 @@ index 00000000000..13e0a8bc350
 +   va_start(args, fmt);
 +   (void) vsnprintf(&msg[strlen(msg)], maxAllowed, fmt, args);
 +   va_end(args);
++}
++
++static inline const char *_enumToString(EGLint constant)
++{
++   switch (constant) {
++   case EGL_YUV_SUBSAMPLE_4_2_0_EXT: return "420";
++   case EGL_YUV_SUBSAMPLE_4_2_2_EXT: return "422";
++   case EGL_YUV_SUBSAMPLE_4_4_4_EXT: return "444";
++   case EGL_YUV_ORDER_AYUV_EXT: return "AYUV";
++   case EGL_YUV_ORDER_UYVY_EXT: return "UYVY";
++   case EGL_YUV_ORDER_VYUY_EXT: return "VYUY";
++   case EGL_YUV_ORDER_YUYV_EXT: return "YUYV";
++   case EGL_YUV_ORDER_YVYU_EXT: return "YVYU";
++   case EGL_YUV_ORDER_YUV_EXT: return "YUV";
++   case EGL_YUV_ORDER_YVU_EXT: return "YVU";
++   case EGL_LUMINANCE_BUFFER: return "lum";
++   case EGL_YUV_BUFFER_EXT: return "yuv";
++   case EGL_RGB_BUFFER: return "rgb";
++   default: return "?";
++   }
 +}
 +
 +static void
@@ -226,6 +240,14 @@ index 00000000000..13e0a8bc350
 +
 +   success &= _eglGetConfigAttrib(dpy, conf, EGL_SAMPLES, &attr->samples);
 +   success &= _eglGetConfigAttrib(dpy, conf, EGL_SAMPLE_BUFFERS, &attr->sampleBuffers);
++   success &= _eglGetConfigAttrib(dpy, conf, EGL_COLOR_BUFFER_TYPE, &attr->colorBufferType);
++
++   if (conf->Display->Extensions.EXT_yuv_surface) {
++      success &= _eglGetConfigAttrib(dpy, conf, EGL_YUV_NUMBER_OF_PLANES_EXT,
++                                     &attr->numPlanes);
++      success &= _eglGetConfigAttrib(dpy, conf, EGL_YUV_SUBSAMPLE_EXT, &attr->subsample);
++      success &= _eglGetConfigAttrib(dpy, conf, EGL_YUV_ORDER_EXT, &attr->order);
++   }
 +
 +   if (!success)
 +      _eglLog(_EGL_DEBUG, "%s: config tainted, could not obtain all attributes",
@@ -271,6 +293,13 @@ index 00000000000..13e0a8bc350
 +                   (attr.renderable & EGL_OPENGL_ES3_BIT) ? 'y' : ' ',
 +                   (attr.renderable & EGL_OPENVG_BIT) ? 'y' : ' ',
 +                   attr.surfString);
++
++   _snprintfStrcat(printMsg, maxMsgSize, " %3.3s",
++                   _enumToString(attr.colorBufferType));
++
++   if (attr.colorBufferType == EGL_YUV_BUFFER_EXT)
++      _snprintfStrcat(printMsg, maxMsgSize, " %1.1d %3.3s %4.4s", attr.numPlanes,
++                      _enumToString(attr.subsample), _enumToString(attr.order));
 +
 +   _eglLog(_EGL_DEBUG, printMsg);
 +}
@@ -463,10 +492,10 @@ index 2a06a34684a..a1cf9770ed8 100644
  _eglLog(EGLint level, const char *fmtStr, ...);
  
 diff --git a/src/egl/meson.build b/src/egl/meson.build
-index d23d62562da..e0628c41c43 100644
+index daa6a3a04f0..384bb98ebb3 100644
 --- a/src/egl/meson.build
 +++ b/src/egl/meson.build
-@@ -30,6 +30,8 @@ files_egl = files(
+@@ -31,6 +31,8 @@ files_egl = files(
    'main/eglapi.c',
    'main/eglarray.c',
    'main/eglarray.h',
@@ -476,5 +505,5 @@ index d23d62562da..e0628c41c43 100644
    'main/eglconfig.h',
    'main/eglcontext.c',
 -- 
-2.17.1
+2.25.1
 

@@ -1,7 +1,7 @@
-From ce5d9f5a0a95658e2c9d54726bcd8986d7e2be4a Mon Sep 17 00:00:00 2001
+From d98cd46b5841ecb785a801a977a1b341d98d08c4 Mon Sep 17 00:00:00 2001
 From: Iosif Antochi <iosif.antochi@imgtec.com>
 Date: Wed, 14 Jun 2017 14:49:55 +0100
-Subject: [PATCH 18/50] egl: automatically call eglReleaseThread on thread
+Subject: [PATCH 17/67] egl: automatically call eglReleaseThread on thread
  termination
 
 EGL thread cleanup conformance tests could run out of memory as the contexts
@@ -22,17 +22,17 @@ dEQP-EGL.functional.robustness.create_context.query_robust_access
  1 file changed, 26 insertions(+), 1 deletion(-)
 
 diff --git a/src/egl/main/eglcurrent.c b/src/egl/main/eglcurrent.c
-index 29be4268025..e93793a6073 100644
+index 11277d3e4c0..c87eac0d007 100644
 --- a/src/egl/main/eglcurrent.c
 +++ b/src/egl/main/eglcurrent.c
-@@ -43,6 +43,7 @@ static mtx_t _egl_TSDMutex = _MTX_INITIALIZER_NP;
+@@ -44,6 +44,7 @@ static mtx_t _egl_TSDMutex = _MTX_INITIALIZER_NP;
  static EGLBoolean _egl_TSDInitialized;
  static tss_t _egl_TSD;
  static void _eglDestroyThreadInfo(_EGLThreadInfo *t);
 +static void _eglDestroyThreadInfoCallback(_EGLThreadInfo *t);
  
  #ifdef USE_ELF_TLS
- static __thread const _EGLThreadInfo *_egl_TLS
+ static __THREAD_INITIAL_EXEC const _EGLThreadInfo *_egl_TLS;
 @@ -86,7 +87,7 @@ static inline EGLBoolean _eglInitTSD()
  
        /* check again after acquiring lock */
@@ -74,5 +74,5 @@ index 29be4268025..e93793a6073 100644
   * Make sure TSD is initialized and return current value.
   */
 -- 
-2.17.1
+2.25.1
 

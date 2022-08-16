@@ -1,7 +1,7 @@
-From 9aab53e750f23aa9e2d8f1bfb2d9f6ff4ac3155a Mon Sep 17 00:00:00 2001
+From fa57726f60bc6fc6e7094f16300cdc41b44ff4f3 Mon Sep 17 00:00:00 2001
 From: Frank Binns <frank.binns@imgtec.com>
 Date: Wed, 18 Jun 2014 17:10:28 +0100
-Subject: [PATCH 08/50] egl: Be stricter when making a context current without
+Subject: [PATCH 07/67] egl: Be stricter when making a context current without
  any surfaces
 
 The EGL_KHR_surfaceless_context extension spec states for eglMakeCurrent:
@@ -33,7 +33,7 @@ is 1.0.
  1 file changed, 3 insertions(+)
 
 diff --git a/src/egl/main/eglapi.c b/src/egl/main/eglapi.c
-index e08b525c319..9d90f503cc5 100644
+index 6ffcff8b2cc..3cd69b96a0f 100644
 --- a/src/egl/main/eglapi.c
 +++ b/src/egl/main/eglapi.c
 @@ -888,6 +888,9 @@ eglMakeCurrent(EGLDisplay dpy, EGLSurface draw, EGLSurface read,
@@ -47,5 +47,5 @@ index e08b525c319..9d90f503cc5 100644
  
     /*    If a native window underlying either draw or read is no longer valid,
 -- 
-2.17.1
+2.25.1
 

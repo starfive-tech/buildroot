@@ -1,7 +1,7 @@
-From d9235705f0c6ff56712577670f9b174f02400f5f Mon Sep 17 00:00:00 2001
+From a6aa5c866c25f7f334afbbcc3835467d50eb8965 Mon Sep 17 00:00:00 2001
 From: Brendan King <Brendan.King@imgtec.com>
 Date: Wed, 8 Nov 2017 15:26:25 +0000
-Subject: [PATCH 22/50] egl/wayland: flush the drawable before blitting
+Subject: [PATCH 21/67] egl/wayland: flush the drawable before blitting
 
 Flush the drawable before blitting in the "is_different_gpu" case when
 swapping buffers, and pass the flush flag to the blitImage call. The
@@ -17,10 +17,10 @@ invalid.
  1 file changed, 3 insertions(+), 2 deletions(-)
 
 diff --git a/src/egl/drivers/dri2/platform_wayland.c b/src/egl/drivers/dri2/platform_wayland.c
-index b76c63f1439..3e6456234fe 100644
+index c2e428769fe..811d28bd669 100644
 --- a/src/egl/drivers/dri2/platform_wayland.c
 +++ b/src/egl/drivers/dri2/platform_wayland.c
-@@ -1126,6 +1126,8 @@ dri2_wl_swap_buffers_with_damage(_EGLDisplay *disp,
+@@ -1117,6 +1117,8 @@ dri2_wl_swap_buffers_with_damage(_EGLDisplay *disp,
        wl_surface_damage(dri2_surf->wl_surface_wrapper,
                          0, 0, INT32_MAX, INT32_MAX);
  
@@ -29,7 +29,7 @@ index b76c63f1439..3e6456234fe 100644
     if (dri2_dpy->is_different_gpu) {
        _EGLContext *ctx = _eglGetCurrentContext();
        struct dri2_egl_context *dri2_ctx = dri2_egl_context(ctx);
-@@ -1135,10 +1137,9 @@ dri2_wl_swap_buffers_with_damage(_EGLDisplay *disp,
+@@ -1126,10 +1128,9 @@ dri2_wl_swap_buffers_with_damage(_EGLDisplay *disp,
                                   0, 0, dri2_surf->base.Width,
                                   dri2_surf->base.Height,
                                   0, 0, dri2_surf->base.Width,
@@ -42,5 +42,5 @@ index b76c63f1439..3e6456234fe 100644
  
     wl_surface_commit(dri2_surf->wl_surface_wrapper);
 -- 
-2.17.1
+2.25.1
 

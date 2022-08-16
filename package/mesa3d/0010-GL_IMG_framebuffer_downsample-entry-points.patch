@@ -1,7 +1,7 @@
-From 67428e8b27839095214419dabccaeffab923a89b Mon Sep 17 00:00:00 2001
+From f43a3258b8f4859ff3e0e3d3d356b319dd6a5435 Mon Sep 17 00:00:00 2001
 From: Rufus Hamade <rufus.hamade@imgtec.com>
 Date: Thu, 4 Feb 2016 14:09:26 +0000
-Subject: [PATCH 11/50] GL_IMG_framebuffer_downsample entry points
+Subject: [PATCH 10/67] GL_IMG_framebuffer_downsample entry points
 
 ---
  .../glapi/gen/IMG_framebuffer_downsample.xml  | 37 +++++++++++++++++++
@@ -54,7 +54,7 @@ index 00000000000..b5ce77dfb08
 +
 +</OpenGLAPI>
 diff --git a/src/mapi/glapi/gen/es_EXT.xml b/src/mapi/glapi/gen/es_EXT.xml
-index c7fde29732a..6aea8c55fac 100644
+index a3bfe86a888..b3432820ba6 100644
 --- a/src/mapi/glapi/gen/es_EXT.xml
 +++ b/src/mapi/glapi/gen/es_EXT.xml
 @@ -1462,6 +1462,9 @@
@@ -68,18 +68,18 @@ index c7fde29732a..6aea8c55fac 100644
      <function name="ViewportArrayvOES" es2="3.1" alias="ViewportArrayv">
          <param name="first" type="GLuint"/>
 diff --git a/src/mapi/glapi/gen/static_data.py b/src/mapi/glapi/gen/static_data.py
-index 1ace5e201d8..2838a4451a2 100644
+index 99729e21b7f..c723cb3fab8 100644
 --- a/src/mapi/glapi/gen/static_data.py
 +++ b/src/mapi/glapi/gen/static_data.py
-@@ -1688,6 +1688,8 @@ offsets = {
-     "ClearPixelLocalStorageuiEXT" : 1652,
-     "FramebufferPixelLocalStorageSizeEXT" : 1653,
-     "GetFramebufferPixelLocalStorageSizeEXT" : 1654,
-+    "FramebufferTexture2DDownsampleIMG" : 1655,
-+    "FramebufferTextureLayerDownsampleIMG" : 1656,
+@@ -1700,6 +1700,8 @@ offsets = {
+     "ClearPixelLocalStorageuiEXT" : 1664,
+     "FramebufferPixelLocalStorageSizeEXT" : 1665,
+     "GetFramebufferPixelLocalStorageSizeEXT" : 1666,
++    "FramebufferTexture2DDownsampleIMG" : 1667,
++    "FramebufferTextureLayerDownsampleIMG" : 1668,
  }
  
  functions = [
 -- 
-2.17.1
+2.25.1
 

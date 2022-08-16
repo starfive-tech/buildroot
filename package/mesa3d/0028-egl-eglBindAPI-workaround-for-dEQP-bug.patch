@@ -1,7 +1,7 @@
-From c431639246d96adce4a8807fa62b3b53cca3adf2 Mon Sep 17 00:00:00 2001
+From 90c87ad050dd7a4deda3ee1609e6cc27ea7dd616 Mon Sep 17 00:00:00 2001
 From: Eric Engestrom <eric.engestrom@imgtec.com>
 Date: Mon, 25 Sep 2017 15:58:49 +0100
-Subject: [PATCH 29/50] egl: eglBindAPI workaround for dEQP bug
+Subject: [PATCH 28/67] egl: eglBindAPI workaround for dEQP bug
 
 dEQP relies on eglBindAPI to only return true if the API can
 successfully be used to create contexts, which the spec does not
@@ -25,5 +25,5 @@ index d9a4a90174e..32570970947 100644
     return api == EGL_OPENGL_ES_API;
  #else
 -- 
-2.17.1
+2.25.1
 

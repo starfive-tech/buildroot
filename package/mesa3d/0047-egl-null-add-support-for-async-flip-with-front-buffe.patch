@@ -1,7 +1,7 @@
-From b2bee752e8c3d4188037b0d538b86836a0ba19d3 Mon Sep 17 00:00:00 2001
+From f775167cbe3f324468f8f355be13bd6efa7d4567 Mon Sep 17 00:00:00 2001
 From: Luigi Santivetti <luigi.santivetti@imgtec.com>
 Date: Mon, 21 Oct 2019 09:21:52 +0100
-Subject: [PATCH 48/50] egl/null: add support for async flip with front buffer
+Subject: [PATCH 47/67] egl/null: add support for async flip with front buffer
  rendering
 
 This change enables the application to render into the buffer being
@@ -45,10 +45,10 @@ Signed-off-by: Luigi Santivetti <luigi.santivetti@imgtec.com>
  2 files changed, 129 insertions(+), 32 deletions(-)
 
 diff --git a/src/egl/drivers/dri2/egl_dri2.h b/src/egl/drivers/dri2/egl_dri2.h
-index 6ec9ee01885..9d60d21e8fd 100644
+index 0f683d76e18..13b808bff80 100644
 --- a/src/egl/drivers/dri2/egl_dri2.h
 +++ b/src/egl/drivers/dri2/egl_dri2.h
-@@ -276,6 +276,7 @@ struct dri2_egl_display
+@@ -282,6 +282,7 @@ struct dri2_egl_display
  #ifdef HAVE_NULL_PLATFORM
     bool                      atomic_enabled;
     bool                      in_formats_enabled;
@@ -56,7 +56,7 @@ index 6ec9ee01885..9d60d21e8fd 100644
     struct display_output     output;
  #endif
  
-@@ -434,8 +435,12 @@ struct dri2_egl_surface
+@@ -442,8 +443,12 @@ struct dri2_egl_surface
  #endif
        bool                locked;
        int                 age;
@@ -69,7 +69,7 @@ index 6ec9ee01885..9d60d21e8fd 100644
  
  #ifdef HAVE_ANDROID_PLATFORM
     struct ANativeWindow *window;
-@@ -463,12 +468,13 @@ struct dri2_egl_surface
+@@ -472,12 +477,13 @@ struct dri2_egl_surface
  #endif
  
  #ifdef HAVE_NULL_PLATFORM
@@ -85,7 +85,7 @@ index 6ec9ee01885..9d60d21e8fd 100644
  #endif
  
 diff --git a/src/egl/drivers/dri2/platform_null.c b/src/egl/drivers/dri2/platform_null.c
-index 701460dde4e..4969121bf37 100644
+index 48a586b6f38..33cf576f147 100644
 --- a/src/egl/drivers/dri2/platform_null.c
 +++ b/src/egl/drivers/dri2/platform_null.c
 @@ -601,6 +601,15 @@ swap_dequeue_data_finish(struct dri2_egl_surface *dri2_surf)
@@ -277,7 +277,7 @@ index 701460dde4e..4969121bf37 100644
     }
  
     if (buffer_mask & __DRI_IMAGE_BUFFER_BACK) {
-@@ -1637,18 +1719,27 @@ dri2_null_setup_swap_interval(_EGLDisplay *disp)
+@@ -1640,18 +1722,27 @@ dri2_null_setup_swap_interval(_EGLDisplay *disp)
     dri2_setup_swap_interval(disp, swap_max_interval);
  
     err = drmGetCap(dri2_dpy->fd, DRM_CAP_ASYNC_PAGE_FLIP, &value);
@@ -317,5 +317,5 @@ index 701460dde4e..4969121bf37 100644
  
  EGLBoolean
 -- 
-2.17.1
+2.25.1
 

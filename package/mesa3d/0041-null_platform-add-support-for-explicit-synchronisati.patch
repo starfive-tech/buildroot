@@ -1,7 +1,7 @@
-From 58d5fa48cf14a930322b5645dd5e26c8b546f394 Mon Sep 17 00:00:00 2001
+From d286d05d0d84c913c8bfcbe8f693083caf3bcc77 Mon Sep 17 00:00:00 2001
 From: Silvestrs Timofejevs <silvestrs.timofejevs@imgtec.com>
 Date: Mon, 2 Sep 2019 09:32:01 +0100
-Subject: [PATCH 42/50] null_platform: add support for explicit synchronisation
+Subject: [PATCH 41/67] null_platform: add support for explicit synchronisation
 
 This change adds support for the 'in' fence, the 'out' fence will
 potentially be added in subsequent optimisation changes.
@@ -42,10 +42,10 @@ Change-Id: Ib9c4a0bc3ea1b21192ee37909d7580d6b7b366ec
  2 files changed, 77 insertions(+), 2 deletions(-)
 
 diff --git a/src/egl/drivers/dri2/egl_dri2.h b/src/egl/drivers/dri2/egl_dri2.h
-index 2fdba4bd62e..3d5c9adb4f3 100644
+index 64d60ed66e4..eb6e4551087 100644
 --- a/src/egl/drivers/dri2/egl_dri2.h
 +++ b/src/egl/drivers/dri2/egl_dri2.h
-@@ -100,6 +100,7 @@ struct wl_buffer;
+@@ -106,6 +106,7 @@ struct wl_buffer;
  #ifdef HAVE_NULL_PLATFORM
  struct display_output {
     bool                   in_use;
@@ -53,7 +53,7 @@ index 2fdba4bd62e..3d5c9adb4f3 100644
     uint32_t               connector_id;
     drmModePropertyRes   **connector_prop_res;
     uint32_t               crtc_id;
-@@ -330,6 +331,7 @@ struct swap_queue_elem
+@@ -338,6 +339,7 @@ struct swap_queue_elem
     uint32_t             swap_interval;
     uint32_t             back_id;
     uint32_t             fb_id;
@@ -62,7 +62,7 @@ index 2fdba4bd62e..3d5c9adb4f3 100644
  
  enum {
 diff --git a/src/egl/drivers/dri2/platform_null.c b/src/egl/drivers/dri2/platform_null.c
-index 0b20aef9e4d..c25ae0b2a04 100644
+index 5b7c1ec426c..d36dc0ced2a 100644
 --- a/src/egl/drivers/dri2/platform_null.c
 +++ b/src/egl/drivers/dri2/platform_null.c
 @@ -401,6 +401,9 @@ display_output_atomic_init(int fd, struct display_output *output)
@@ -210,5 +210,5 @@ index 0b20aef9e4d..c25ae0b2a04 100644
  
  err_free_surface:
 -- 
-2.17.1
+2.25.1
 

@@ -1,26 +1,26 @@
-From 41dc5e009c2ad9e9db26256fbff335d04f03ccbd Mon Sep 17 00:00:00 2001
+From def26b8534e4f8e150e5775dd1f7d2d955580c05 Mon Sep 17 00:00:00 2001
 From: Frank Binns <francisbinns@gmail.com>
 Date: Sun, 5 Jun 2016 12:04:40 +0100
-Subject: [PATCH 37/50] egl: add "null" platform
+Subject: [PATCH 36/67] egl: add "null" platform
 
 ---
  meson.build                          |   25 +-
  meson_options.txt                    |    2 +-
- src/egl/drivers/dri2/egl_dri2.c      |    6 +
+ src/egl/drivers/dri2/egl_dri2.c      |   11 +-
  src/egl/drivers/dri2/egl_dri2.h      |   57 +-
- src/egl/drivers/dri2/platform_null.c | 1176 ++++++++++++++++++++++++++
+ src/egl/drivers/dri2/platform_null.c | 1179 ++++++++++++++++++++++++++
  src/egl/main/eglapi.c                |    5 +-
  src/egl/main/egldisplay.c            |    1 +
  src/egl/main/egldisplay.h            |    1 +
  src/egl/meson.build                  |    5 +
- 9 files changed, 1271 insertions(+), 7 deletions(-)
+ 9 files changed, 1277 insertions(+), 9 deletions(-)
  create mode 100644 src/egl/drivers/dri2/platform_null.c
 
 diff --git a/meson.build b/meson.build
-index c90e44254d2..56340b8ef3b 100644
+index 3d9d345dbf2..2018562a1ec 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -328,7 +328,7 @@ endif
+@@ -340,7 +340,7 @@ endif
  _platforms = get_option('platforms')
  if _platforms.contains('auto')
    if system_has_kms_drm
@@ -29,7 +29,7 @@ index c90e44254d2..56340b8ef3b 100644
    elif ['darwin', 'cygwin'].contains(host_machine.system())
      _platforms = ['x11']
    elif ['haiku'].contains(host_machine.system())
-@@ -347,6 +347,7 @@ with_platform_wayland = _platforms.contains('wayland')
+@@ -359,6 +359,7 @@ with_platform_wayland = _platforms.contains('wayland')
  with_platform_haiku = _platforms.contains('haiku')
  with_platform_windows = _platforms.contains('windows')
  with_platform_tizen = _platforms.contains('tizen')
@@ -37,7 +37,7 @@ index c90e44254d2..56340b8ef3b 100644
  
  if with_platform_tizen and _platforms.length() != 1
    error('tizen cannot be enabled at the same time as other platforms')
-@@ -903,6 +904,26 @@ if with_platform_tizen
+@@ -958,6 +959,26 @@ if with_platform_tizen
    ]
    pre_args += '-DHAVE_TIZEN_PLATFORM'
  endif
@@ -64,7 +64,7 @@ index c90e44254d2..56340b8ef3b 100644
  
  prog_python = import('python').find_installation('python3')
  has_mako = run_command(
-@@ -1502,7 +1523,7 @@ dep_libdrm = dependency(
+@@ -1583,7 +1604,7 @@ dep_libdrm = dependency(
    'libdrm', version : '>=' + _drm_ver,
    # GNU/Hurd includes egl_dri2, without drm.
    required : (with_dri2 and host_machine.system() != 'gnu') or with_dri3 or
@@ -74,7 +74,7 @@ index c90e44254d2..56340b8ef3b 100644
  if dep_libdrm.found()
    pre_args += '-DHAVE_LIBDRM'
 diff --git a/meson_options.txt b/meson_options.txt
-index b2ba2d8d979..9073223e8f5 100644
+index 8230db93c70..d90a25f97ff 100644
 --- a/meson_options.txt
 +++ b/meson_options.txt
 @@ -23,7 +23,7 @@ option(
@@ -87,10 +87,10 @@ index b2ba2d8d979..9073223e8f5 100644
    description : 'window systems to support. If this is set to `auto`, all platforms applicable will be enabled.'
  )
 diff --git a/src/egl/drivers/dri2/egl_dri2.c b/src/egl/drivers/dri2/egl_dri2.c
-index d359934a818..ee19d125675 100644
+index d511d73f2ed..2f8414e0c60 100644
 --- a/src/egl/drivers/dri2/egl_dri2.c
 +++ b/src/egl/drivers/dri2/egl_dri2.c
-@@ -1282,6 +1282,9 @@ dri2_initialize(_EGLDisplay *disp)
+@@ -1253,6 +1253,9 @@ dri2_initialize(_EGLDisplay *disp)
     case _EGL_PLATFORM_DEVICE:
        ret = dri2_initialize_device(disp);
        break;
@@ -100,7 +100,16 @@ index d359934a818..ee19d125675 100644
     case _EGL_PLATFORM_X11:
     case _EGL_PLATFORM_XCB:
        ret = dri2_initialize_x11(disp);
-@@ -1384,6 +1387,9 @@ dri2_display_destroy(_EGLDisplay *disp)
+@@ -1318,8 +1321,6 @@ dri2_display_destroy(_EGLDisplay *disp)
+          dri2_dpy->vtbl->close_screen_notify(disp);
+       dri2_dpy->core->destroyScreen(dri2_dpy->dri_screen);
+    }
+-   if (dri2_dpy->fd >= 0)
+-      close(dri2_dpy->fd);
+ 
+    /* Don't dlclose the driver when building with the address sanitizer, so you
+     * get good symbols from the leak reports.
+@@ -1355,11 +1356,17 @@ dri2_display_destroy(_EGLDisplay *disp)
           tpl_object_unreference((tpl_object_t *) dri2_dpy->tpl_dpy);
        break;
  #endif
@@ -110,11 +119,19 @@ index d359934a818..ee19d125675 100644
     default:
        /* TODO: add teardown for other platforms */
        break;
+    }
+ 
++   if (dri2_dpy->fd >= 0)
++      close(dri2_dpy->fd);
++
+    /* The drm platform does not create the screen/driver_configs but reuses
+     * the ones from the gbm device. As such the gbm itself is responsible
+     * for the cleanup.
 diff --git a/src/egl/drivers/dri2/egl_dri2.h b/src/egl/drivers/dri2/egl_dri2.h
-index a33d87b23c1..95435b9ee12 100644
+index f41f32cd234..eb2127e3fe6 100644
 --- a/src/egl/drivers/dri2/egl_dri2.h
 +++ b/src/egl/drivers/dri2/egl_dri2.h
-@@ -75,6 +75,10 @@ struct zwp_linux_dmabuf_v1;
+@@ -81,6 +81,10 @@ struct zwp_linux_dmabuf_v1;
  #include <tbm_surface_internal.h>
  #endif
  
@@ -125,7 +142,7 @@ index a33d87b23c1..95435b9ee12 100644
  #include "eglconfig.h"
  #include "eglcontext.h"
  #include "egldevice.h"
-@@ -93,6 +97,22 @@ struct zwp_linux_dmabuf_v1;
+@@ -99,6 +103,22 @@ struct zwp_linux_dmabuf_v1;
  
  struct wl_buffer;
  
@@ -148,7 +165,7 @@ index a33d87b23c1..95435b9ee12 100644
  struct dri2_egl_display_vtbl {
     /* mandatory on Wayland, unused otherwise */
     int (*authenticate)(_EGLDisplay *disp, uint32_t id);
-@@ -251,6 +271,11 @@ struct dri2_egl_display
+@@ -257,6 +277,11 @@ struct dri2_egl_display
     char                     *device_name;
  #endif
  
@@ -159,8 +176,8 @@ index a33d87b23c1..95435b9ee12 100644
 +
  #ifdef HAVE_ANDROID_PLATFORM
     const gralloc_module_t *gralloc;
- #endif
-@@ -324,7 +349,10 @@ struct dri2_egl_surface
+    /* gralloc vendor usage bit for front rendering */
+@@ -332,7 +357,10 @@ struct dri2_egl_surface
     struct wl_display     *wl_dpy_wrapper;
     struct wl_drm         *wl_drm_wrapper;
     struct wl_callback    *throttle_callback;
@@ -172,7 +189,7 @@ index a33d87b23c1..95435b9ee12 100644
  #endif
  
  #ifdef HAVE_DRM_PLATFORM
-@@ -350,9 +378,10 @@ struct dri2_egl_surface
+@@ -358,9 +386,10 @@ struct dri2_egl_surface
     __DRIbuffer           *local_buffers[__DRI_BUFFER_COUNT];
  
  #if defined(HAVE_WAYLAND_PLATFORM) || defined(HAVE_DRM_PLATFORM) || \
@@ -185,7 +202,7 @@ index a33d87b23c1..95435b9ee12 100644
        __DRIimage         *dri_image;
  #endif
  #ifdef HAVE_WAYLAND_PLATFORM
-@@ -369,6 +398,9 @@ struct dri2_egl_surface
+@@ -377,6 +406,9 @@ struct dri2_egl_surface
  #endif
  #ifdef HAVE_TIZEN_PLATFORM
        tbm_surface_h       tbm_surf;
@@ -195,7 +212,7 @@ index a33d87b23c1..95435b9ee12 100644
  #endif
        bool                locked;
        int                 age;
-@@ -400,6 +432,10 @@ struct dri2_egl_surface
+@@ -409,6 +441,10 @@ struct dri2_egl_surface
     void                 *swrast_front;
  #endif
  
@@ -206,7 +223,7 @@ index a33d87b23c1..95435b9ee12 100644
     int out_fence_fd;
     EGLBoolean enable_out_fence;
  
-@@ -580,6 +616,21 @@ EGLBoolean
+@@ -589,6 +625,21 @@ EGLBoolean
  dri2_initialize_tizen(_EGLDisplay *disp);
  #endif
  
@@ -230,10 +247,10 @@ index a33d87b23c1..95435b9ee12 100644
  static inline void
 diff --git a/src/egl/drivers/dri2/platform_null.c b/src/egl/drivers/dri2/platform_null.c
 new file mode 100644
-index 00000000000..2b3b08cc259
+index 00000000000..fb03ecc36fd
 --- /dev/null
 +++ b/src/egl/drivers/dri2/platform_null.c
-@@ -0,0 +1,1176 @@
+@@ -0,0 +1,1179 @@
 +/*
 + * Copyright (c) Imagination Technologies Ltd.
 + *
@@ -1282,8 +1299,11 @@ index 00000000000..2b3b08cc259
 +      if (format_idx == -1)
 +         continue;
 +
-+      if (!(dri2_dpy->output.formats & (1 << format_idx)))
++      if (!(dri2_dpy->output.formats & (1 << format_idx))) {
++         _eglLog(_EGL_DEBUG, "unsupported drm format 0x%04x",
++                 dri2_null_formats[format_idx].drm_format);
 +         continue;
++      }
 +
 +      dri2_conf = dri2_add_config(disp,
 +                                  dri2_dpy->driver_configs[i], count + 1,
@@ -1411,7 +1431,7 @@ index 00000000000..2b3b08cc259
 +   }
 +}
 diff --git a/src/egl/main/eglapi.c b/src/egl/main/eglapi.c
-index 8d9f4a76330..893541f55b1 100644
+index 6d7f62c6851..e4f2c43b4ef 100644
 --- a/src/egl/main/eglapi.c
 +++ b/src/egl/main/eglapi.c
 @@ -989,7 +989,10 @@ _eglCreateWindowSurfaceCommon(_EGLDisplay *disp, EGLConfig config,
@@ -1451,10 +1471,10 @@ index 020529c57e2..8489af9dde2 100644
     _EGL_NUM_PLATFORMS,
     _EGL_INVALID_PLATFORM = -1
 diff --git a/src/egl/meson.build b/src/egl/meson.build
-index 17e9c690b82..d23d62562da 100644
+index 5749ec88f89..daa6a3a04f0 100644
 --- a/src/egl/meson.build
 +++ b/src/egl/meson.build
-@@ -142,6 +142,11 @@ if with_platform_tizen
+@@ -146,6 +146,11 @@ if with_platform_tizen
    incs_for_egl += [inc_loader]
    deps_for_egl += [dep_tizen, dep_libdrm]
  endif
@@ -1467,5 +1487,5 @@ index 17e9c690b82..d23d62562da 100644
  if cc.has_function('mincore')
    c_args_for_egl += '-DHAVE_MINCORE'
 -- 
-2.17.1
+2.25.1
 

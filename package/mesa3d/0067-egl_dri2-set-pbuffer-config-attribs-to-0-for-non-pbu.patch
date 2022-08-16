@@ -1,7 +1,7 @@
-From 090a4c570fb58b5cd55a7628e6805cf16b36b030 Mon Sep 17 00:00:00 2001
+From 9bb8868ebab2d041c24c76487b6419a8039a5ce7 Mon Sep 17 00:00:00 2001
 From: Frank Binns <frank.binns@imgtec.com>
 Date: Wed, 4 Jun 2014 13:43:03 +0100
-Subject: [PATCH 07/50] egl_dri2: set pbuffer config attribs to 0 for
+Subject: [PATCH 67/67] egl_dri2: set pbuffer config attribs to 0 for
  non-pbuffer configs
 
 If the EGL_PBUFFER_BIT isn't set in the surface type, don't set the
@@ -14,10 +14,10 @@ values from the DRI config.
  1 file changed, 18 insertions(+), 2 deletions(-)
 
 diff --git a/src/egl/drivers/dri2/egl_dri2.c b/src/egl/drivers/dri2/egl_dri2.c
-index fb5d5617511..a47589d929f 100644
+index 56b5175db6e..1b10c2e7362 100644
 --- a/src/egl/drivers/dri2/egl_dri2.c
 +++ b/src/egl/drivers/dri2/egl_dri2.c
-@@ -415,6 +415,7 @@ dri2_add_config(_EGLDisplay *disp, const __DRIconfig *dri_config, int id,
+@@ -407,6 +407,7 @@ dri2_add_config(_EGLDisplay *disp, const __DRIconfig *dri_config, int id,
     struct dri2_egl_display *dri2_dpy = dri2_egl_display(disp);
     _EGLConfig base;
     unsigned int attrib, value, double_buffer;
@@ -25,7 +25,7 @@ index fb5d5617511..a47589d929f 100644
     bool srgb = false;
     EGLint key, bind_to_texture_rgb, bind_to_texture_rgba;
     int dri_shifts[4] = { -1, -1, -1, -1 };
-@@ -536,11 +537,17 @@ dri2_add_config(_EGLDisplay *disp, const __DRIconfig *dri_config, int id,
+@@ -530,11 +531,17 @@ dri2_add_config(_EGLDisplay *disp, const __DRIconfig *dri_config, int id,
           break;
  
        case __DRI_ATTRIB_MAX_PBUFFER_WIDTH:
@@ -45,7 +45,7 @@ index fb5d5617511..a47589d929f 100644
        case __DRI_ATTRIB_MUTABLE_RENDER_BUFFER:
           if (disp->Extensions.KHR_mutable_render_buffer)
              surface_type |= EGL_MUTABLE_RENDER_BUFFER_BIT_KHR;
-@@ -553,6 +560,15 @@ dri2_add_config(_EGLDisplay *disp, const __DRIconfig *dri_config, int id,
+@@ -614,6 +621,15 @@ dri2_add_config(_EGLDisplay *disp, const __DRIconfig *dri_config, int id,
        }
     }
  
@@ -62,5 +62,5 @@ index fb5d5617511..a47589d929f 100644
        for (int i = 0; attr_list[i] != EGL_NONE; i += 2)
           _eglSetConfigKey(&base, attr_list[i], attr_list[i+1]);
 -- 
-2.17.1
+2.25.1
 

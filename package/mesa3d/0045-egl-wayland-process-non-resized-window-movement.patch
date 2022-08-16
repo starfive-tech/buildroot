@@ -1,7 +1,7 @@
-From bc8f13db460c79ef9036e7f0983bb039ac1af777 Mon Sep 17 00:00:00 2001
+From 394d340dda351452571ec8861d6768c52d338251 Mon Sep 17 00:00:00 2001
 From: Brendan King <Brendan.King@imgtec.com>
 Date: Tue, 25 Aug 2020 14:12:32 +0100
-Subject: [PATCH 46/50] egl/wayland: process non-resized window movement
+Subject: [PATCH 45/67] egl/wayland: process non-resized window movement
 
 The dx and dy parameters to the wl_egl_window_resize function were
 not being processed unless the window width or height were being
@@ -11,10 +11,10 @@ changed.
  1 file changed, 3 insertions(+), 2 deletions(-)
 
 diff --git a/src/egl/drivers/dri2/platform_wayland.c b/src/egl/drivers/dri2/platform_wayland.c
-index de12ec21f53..f4b43aa26a2 100644
+index 72456d5d748..06272d4081e 100644
 --- a/src/egl/drivers/dri2/platform_wayland.c
 +++ b/src/egl/drivers/dri2/platform_wayland.c
-@@ -265,6 +265,9 @@ resize_callback(struct wl_egl_window *wl_win, void *data)
+@@ -266,6 +266,9 @@ resize_callback(struct wl_egl_window *wl_win, void *data)
     struct dri2_egl_display *dri2_dpy =
        dri2_egl_display(dri2_surf->base.Resource.Display);
  
@@ -24,7 +24,7 @@ index de12ec21f53..f4b43aa26a2 100644
     if (dri2_surf->base.Width == wl_win->width &&
         dri2_surf->base.Height == wl_win->height)
        return;
-@@ -799,8 +802,6 @@ update_buffers(struct dri2_egl_display *dri2_dpy,
+@@ -786,8 +789,6 @@ update_buffers(struct dri2_egl_display *dri2_dpy,
  
        dri2_surf->base.Width  = dri2_surf->wl_win->width;
        dri2_surf->base.Height = dri2_surf->wl_win->height;
@@ -32,7 +32,7 @@ index de12ec21f53..f4b43aa26a2 100644
 -      dri2_surf->dy = dri2_surf->wl_win->dy;
     }
  
-    if (dri2_surf->base.Width != dri2_surf->wl_win->attached_width ||
+    if (dri2_surf->wl_win &&
 -- 
-2.17.1
+2.25.1
 

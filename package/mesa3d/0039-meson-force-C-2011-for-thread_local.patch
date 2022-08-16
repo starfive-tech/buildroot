@@ -1,7 +1,7 @@
-From 04993e64906c7481f877dd6775a935259ea2d5b9 Mon Sep 17 00:00:00 2001
+From c8a6405eaf4c9693f32381fa7aa6d292e7f95716 Mon Sep 17 00:00:00 2001
 From: Brendan King <Brendan.King@imgtec.com>
 Date: Mon, 24 Jun 2019 09:35:39 +0100
-Subject: [PATCH 40/50] meson: force C++ 2011 for "thread_local"
+Subject: [PATCH 39/67] meson: force C++ 2011 for "thread_local"
 
 For some combinations of Meson and the GNU C++ compiler, Meson does
 not add '-std=c++11' to the command line arguments, resulting in
@@ -14,7 +14,7 @@ command line arguments.
  1 file changed, 6 insertions(+)
 
 diff --git a/meson.build b/meson.build
-index 56340b8ef3b..3c55447b6eb 100644
+index 2018562a1ec..21d93d372c2 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -32,6 +32,12 @@ project(
@@ -31,5 +31,5 @@ index 56340b8ef3b..3c55447b6eb 100644
  
  if get_option('layout') != 'mirror'
 -- 
-2.17.1
+2.25.1
 

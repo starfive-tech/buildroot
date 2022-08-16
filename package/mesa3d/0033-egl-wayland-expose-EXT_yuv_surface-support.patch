@@ -1,7 +1,7 @@
-From 2b9a147b073ed8ff1d52246be5c885959d859c45 Mon Sep 17 00:00:00 2001
+From 3d47285da42c76fe36ae67c62e8d0a0d76d18da0 Mon Sep 17 00:00:00 2001
 From: Frank Binns <frank.binns@imgtec.com>
 Date: Thu, 11 Jan 2018 09:38:47 +0000
-Subject: [PATCH 34/50] egl/wayland: expose EXT_yuv_surface support
+Subject: [PATCH 33/67] egl/wayland: expose EXT_yuv_surface support
 
 This adds support for YUYV configs.
 ---
@@ -10,10 +10,10 @@ This adds support for YUYV configs.
  2 files changed, 15 insertions(+), 1 deletion(-)
 
 diff --git a/src/egl/drivers/dri2/egl_dri2.c b/src/egl/drivers/dri2/egl_dri2.c
-index a0b52eab983..d359934a818 100644
+index ee3bcda4d12..d511d73f2ed 100644
 --- a/src/egl/drivers/dri2/egl_dri2.c
 +++ b/src/egl/drivers/dri2/egl_dri2.c
-@@ -2798,6 +2798,7 @@ static const struct wl_drm_components_descriptor {
+@@ -2769,6 +2769,7 @@ static const struct wl_drm_components_descriptor {
     { __DRI_IMAGE_COMPONENTS_Y_U_V, EGL_TEXTURE_Y_U_V_WL, 3 },
     { __DRI_IMAGE_COMPONENTS_Y_UV, EGL_TEXTURE_Y_UV_WL, 2 },
     { __DRI_IMAGE_COMPONENTS_Y_XUXV, EGL_TEXTURE_Y_XUXV_WL, 2 },
@@ -22,10 +22,10 @@ index a0b52eab983..d359934a818 100644
  
  static _EGLImage *
 diff --git a/src/egl/drivers/dri2/platform_wayland.c b/src/egl/drivers/dri2/platform_wayland.c
-index 43ad6420174..de12ec21f53 100644
+index a096d9500c1..72456d5d748 100644
 --- a/src/egl/drivers/dri2/platform_wayland.c
 +++ b/src/egl/drivers/dri2/platform_wayland.c
-@@ -134,6 +134,13 @@ static const struct dri2_wl_visual {
+@@ -135,6 +135,13 @@ static const struct dri2_wl_visual {
        { 11, 5, 0, -1 },
        { 5, 6, 5, 0 },
     },
@@ -39,7 +39,7 @@ index 43ad6420174..de12ec21f53 100644
  };
  
  static_assert(ARRAY_SIZE(dri2_wl_visuals) <= EGL_DRI2_MAX_FORMATS,
-@@ -970,6 +977,7 @@ dri2_wl_get_capability(void *loaderPrivate, enum dri_loader_cap cap)
+@@ -958,6 +965,7 @@ dri2_wl_get_capability(void *loaderPrivate, enum dri_loader_cap cap)
  {
     switch (cap) {
     case DRI_LOADER_CAP_FP16:
@@ -47,7 +47,7 @@ index 43ad6420174..de12ec21f53 100644
        return 1;
     default:
        return 0;
-@@ -1561,6 +1569,7 @@ dri2_wl_add_configs_for_visuals(_EGLDisplay *disp)
+@@ -1552,6 +1560,7 @@ dri2_wl_add_configs_for_visuals(_EGLDisplay *disp)
     struct dri2_egl_display *dri2_dpy = dri2_egl_display(disp);
     unsigned int format_count[ARRAY_SIZE(dri2_wl_visuals)] = { 0 };
     unsigned int count = 0;
@@ -55,7 +55,7 @@ index 43ad6420174..de12ec21f53 100644
     bool assigned;
  
     for (unsigned i = 0; dri2_dpy->driver_configs[i]; i++) {
-@@ -1572,8 +1581,12 @@ dri2_wl_add_configs_for_visuals(_EGLDisplay *disp)
+@@ -1563,8 +1572,12 @@ dri2_wl_add_configs_for_visuals(_EGLDisplay *disp)
           if (!BITSET_TEST(dri2_dpy->formats, j))
              continue;
  
@@ -70,5 +70,5 @@ index 43ad6420174..de12ec21f53 100644
              if (dri2_conf->base.ConfigID == count + 1)
                 count++;
 -- 
-2.17.1
+2.25.1
 

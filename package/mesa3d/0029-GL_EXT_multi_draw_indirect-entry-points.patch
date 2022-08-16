@@ -1,7 +1,7 @@
-From 651ae0156f4cec4dbf70eef95e1eceebe8941a20 Mon Sep 17 00:00:00 2001
+From a763c01172ee21a26f4c9dbb6055093f78d06fb2 Mon Sep 17 00:00:00 2001
 From: Brendan King <Brendan.King@imgtec.com>
 Date: Tue, 30 Jan 2018 10:25:11 +0000
-Subject: [PATCH 30/50] GL_EXT_multi_draw_indirect entry points
+Subject: [PATCH 29/67] GL_EXT_multi_draw_indirect entry points
 
 ---
  src/mapi/glapi/gen/es_EXT.xml     | 19 +++++++++++++++++++
@@ -9,7 +9,7 @@ Subject: [PATCH 30/50] GL_EXT_multi_draw_indirect entry points
  2 files changed, 21 insertions(+)
 
 diff --git a/src/mapi/glapi/gen/es_EXT.xml b/src/mapi/glapi/gen/es_EXT.xml
-index 359cc9ca8cf..de2862a71a5 100644
+index fe8f27e1e6f..e0d60faa9d2 100644
 --- a/src/mapi/glapi/gen/es_EXT.xml
 +++ b/src/mapi/glapi/gen/es_EXT.xml
 @@ -1140,6 +1140,25 @@
@@ -39,18 +39,18 @@ index 359cc9ca8cf..de2862a71a5 100644
  
      <function name="CopyImageSubDataEXT" alias="CopyImageSubData" es2="3.0">
 diff --git a/src/mapi/glapi/gen/static_data.py b/src/mapi/glapi/gen/static_data.py
-index d13dc915d6f..32fb3b8f4f7 100644
+index dc6bdc9dcce..e231c176264 100644
 --- a/src/mapi/glapi/gen/static_data.py
 +++ b/src/mapi/glapi/gen/static_data.py
-@@ -1692,6 +1692,8 @@ offsets = {
-     "FramebufferTextureLayerDownsampleIMG" : 1656,
-     "FramebufferTextureMultiviewOVR" : 1657,
-     "FramebufferTextureMultisampleMultiviewOVR" : 1658,
-+    "MultiDrawArraysIndirectEXT" : 1659,
-+    "MultiDrawElementsIndirectEXT" : 1660,
+@@ -1704,6 +1704,8 @@ offsets = {
+     "FramebufferTextureLayerDownsampleIMG" : 1668,
+     "FramebufferTextureMultiviewOVR" : 1669,
+     "FramebufferTextureMultisampleMultiviewOVR" : 1670,
++    "MultiDrawArraysIndirectEXT" : 1671,
++    "MultiDrawElementsIndirectEXT" : 1672,
  }
  
  functions = [
 -- 
-2.17.1
+2.25.1
 

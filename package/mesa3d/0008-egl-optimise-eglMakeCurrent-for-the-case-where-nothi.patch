@@ -1,7 +1,7 @@
-From 0b65066319eff5c482614574d4a4192454837835 Mon Sep 17 00:00:00 2001
+From f556292d5811750d119acea6c7dc0c5ebd3e1af6 Mon Sep 17 00:00:00 2001
 From: Frank Binns <frank.binns@imgtec.com>
 Date: Tue, 15 Sep 2015 14:15:31 +0100
-Subject: [PATCH 09/50] egl: optimise eglMakeCurrent for the case where nothing
+Subject: [PATCH 08/67] egl: optimise eglMakeCurrent for the case where nothing
  has changed
 
 When an application calls eglMakeCurrent with a context, draw surface and
@@ -12,7 +12,7 @@ thread don't perform a flush as this is an expensive operation.
  1 file changed, 11 insertions(+), 1 deletion(-)
 
 diff --git a/src/egl/main/eglapi.c b/src/egl/main/eglapi.c
-index 9d90f503cc5..bc7014ef8ed 100644
+index 3cd69b96a0f..234449adf64 100644
 --- a/src/egl/main/eglapi.c
 +++ b/src/egl/main/eglapi.c
 @@ -853,6 +853,7 @@ eglMakeCurrent(EGLDisplay dpy, EGLSurface draw, EGLSurface read,
@@ -42,5 +42,5 @@ index 9d90f503cc5..bc7014ef8ed 100644
     RETURN_EGL_EVAL(disp, ret);
  }
 -- 
-2.17.1
+2.25.1
 

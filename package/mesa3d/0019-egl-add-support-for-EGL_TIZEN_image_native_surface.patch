@@ -1,7 +1,7 @@
-From 072528e4c6b37df46499a87478f535f6235ffde5 Mon Sep 17 00:00:00 2001
+From 230a8cb550dc23a46a96b1852720c262bb244665 Mon Sep 17 00:00:00 2001
 From: Eric Engestrom <eric.engestrom@imgtec.com>
 Date: Mon, 6 Feb 2017 15:54:00 +0000
-Subject: [PATCH 20/50] egl: add support for EGL_TIZEN_image_native_surface
+Subject: [PATCH 19/67] egl: add support for EGL_TIZEN_image_native_surface
 
 ---
  src/egl/drivers/dri2/egl_dri2.c       | 127 ++++++++++++++++++++------
@@ -11,7 +11,7 @@ Subject: [PATCH 20/50] egl: add support for EGL_TIZEN_image_native_surface
  4 files changed, 102 insertions(+), 30 deletions(-)
 
 diff --git a/src/egl/drivers/dri2/egl_dri2.c b/src/egl/drivers/dri2/egl_dri2.c
-index e9f745e4258..04e05567acb 100644
+index 6d34395d65d..eaa0baed066 100644
 --- a/src/egl/drivers/dri2/egl_dri2.c
 +++ b/src/egl/drivers/dri2/egl_dri2.c
 @@ -58,6 +58,10 @@
@@ -25,7 +25,7 @@ index e9f745e4258..04e05567acb 100644
  #include "egldefines.h"
  #include "egl_dri2.h"
  #include "GL/mesa_glinterop.h"
-@@ -2340,28 +2344,115 @@ dri2_fourcc_from_tbm_format(tbm_format format)
+@@ -2311,28 +2315,115 @@ dri2_fourcc_from_tbm_format(tbm_format format)
     switch (format) {
     case TBM_FORMAT_ARGB8888:
        return DRM_FORMAT_ARGB8888;
@@ -144,7 +144,7 @@ index e9f745e4258..04e05567acb 100644
  
     tbm_surf = tpl_display_get_buffer_from_native_pixmap(dri2_dpy->tpl_dpy,
                                                          (tpl_handle_t) _buffer);
-@@ -2392,33 +2483,7 @@ dri2_create_image_wayland_wl_buffer_tizen(_EGLDisplay *disp, _EGLContext *ctx,
+@@ -2363,33 +2454,7 @@ dri2_create_image_wayland_wl_buffer_tizen(_EGLDisplay *disp, _EGLContext *ctx,
        return NULL;
     }
  
@@ -179,7 +179,7 @@ index e9f745e4258..04e05567acb 100644
  }
  #endif
  
-@@ -3319,6 +3384,8 @@ dri2_create_image_khr(_EGLDisplay *disp, _EGLContext *ctx, EGLenum target,
+@@ -3296,6 +3361,8 @@ dri2_create_image_khr(_EGLDisplay *disp, _EGLContext *ctx, EGLenum target,
  #ifdef HAVE_TIZEN_PLATFORM
     case EGL_WAYLAND_BUFFER_WL:
        return dri2_create_image_wayland_wl_buffer_tizen(disp, ctx, buffer, attr_list);
@@ -201,7 +201,7 @@ index a08bc8c07bf..ad75c115d7e 100644
     /*
      * Fill vtbl last to prevent accidentally calling virtual function during
 diff --git a/src/egl/main/eglapi.c b/src/egl/main/eglapi.c
-index 4c29eedb684..c4dcc015941 100644
+index 43c7b917909..e2a7797d73e 100644
 --- a/src/egl/main/eglapi.c
 +++ b/src/egl/main/eglapi.c
 @@ -553,6 +553,8 @@ _eglCreateExtensionsString(_EGLDisplay *disp)
@@ -227,5 +227,5 @@ index cbb098331bf..0a7366b7c07 100644
     EGLBoolean WL_create_wayland_buffer_from_image;
  
 -- 
-2.17.1
+2.25.1
 

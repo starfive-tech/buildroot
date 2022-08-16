@@ -1,7 +1,7 @@
-From daf8ff0be3c3fbfe5bfba656eca511a45720bdea Mon Sep 17 00:00:00 2001
+From 40c0d03cfb2751279b24890d0f752fade968862e Mon Sep 17 00:00:00 2001
 From: Frank Binns <frank.binns@imgtec.com>
 Date: Tue, 13 Feb 2018 14:47:48 +0000
-Subject: [PATCH 35/50] egl/tizen: expose EXT_yuv_surface support
+Subject: [PATCH 34/67] egl/tizen: expose EXT_yuv_surface support
 
 This adds support for NV12 and NV21 configs.
 ---
@@ -353,5 +353,5 @@ index 2bc9b3e7c64..b6478a1875b 100644
        if (caveat & __DRI_ATTRIB_NON_CONFORMANT_CONFIG)
           attr_list[3] = EGL_NON_CONFORMANT_CONFIG;
 -- 
-2.17.1
+2.25.1
 

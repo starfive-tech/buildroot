@@ -1,7 +1,7 @@
-From daf743a8fdc7171dea73c390e3255b5c6e19046c Mon Sep 17 00:00:00 2001
+From f16ea577ee06375423198dced8231d04e94536af Mon Sep 17 00:00:00 2001
 From: Brendan King <Brendan.King@imgtec.com>
 Date: Fri, 17 Mar 2017 16:23:07 +0000
-Subject: [PATCH 27/50] egl/wayland: add pbuffer support
+Subject: [PATCH 26/67] egl/wayland: add pbuffer support
 
 The pbuffer code is based on that in the Surfaceless platform code.
 ---
@@ -10,10 +10,10 @@ The pbuffer code is based on that in the Surfaceless platform code.
  2 files changed, 236 insertions(+), 38 deletions(-)
 
 diff --git a/src/egl/drivers/dri2/egl_dri2.h b/src/egl/drivers/dri2/egl_dri2.h
-index e516c54810d..a33d87b23c1 100644
+index 546bc0a0dbc..f41f32cd234 100644
 --- a/src/egl/drivers/dri2/egl_dri2.h
 +++ b/src/egl/drivers/dri2/egl_dri2.h
-@@ -396,6 +396,10 @@ struct dri2_egl_surface
+@@ -405,6 +405,10 @@ struct dri2_egl_surface
     __DRIimage           *front;
     unsigned int         visual;
  
@@ -25,10 +25,10 @@ index e516c54810d..a33d87b23c1 100644
     EGLBoolean enable_out_fence;
  
 diff --git a/src/egl/drivers/dri2/platform_wayland.c b/src/egl/drivers/dri2/platform_wayland.c
-index 3e6456234fe..43ad6420174 100644
+index 811d28bd669..a096d9500c1 100644
 --- a/src/egl/drivers/dri2/platform_wayland.c
 +++ b/src/egl/drivers/dri2/platform_wayland.c
-@@ -416,6 +416,99 @@ dri2_wl_create_pixmap_surface(_EGLDisplay *disp, _EGLConfig *conf,
+@@ -427,6 +427,99 @@ dri2_wl_create_pixmap_surface(_EGLDisplay *disp, _EGLConfig *conf,
     return NULL;
  }
  
@@ -128,7 +128,7 @@ index 3e6456234fe..43ad6420174 100644
  /**
   * Called via eglDestroySurface(), drv->DestroySurface().
   */
-@@ -442,6 +535,9 @@ dri2_wl_destroy_surface(_EGLDisplay *disp, _EGLSurface *surf)
+@@ -453,6 +546,9 @@ dri2_wl_destroy_surface(_EGLDisplay *disp, _EGLSurface *surf)
     if (dri2_dpy->dri2)
        dri2_egl_surface_free_local_buffers(dri2_surf);
  
@@ -138,7 +138,7 @@ index 3e6456234fe..43ad6420174 100644
     if (dri2_surf->throttle_callback)
        wl_callback_destroy(dri2_surf->throttle_callback);
  
-@@ -451,11 +547,14 @@ dri2_wl_destroy_surface(_EGLDisplay *disp, _EGLSurface *surf)
+@@ -462,11 +558,14 @@ dri2_wl_destroy_surface(_EGLDisplay *disp, _EGLSurface *surf)
        dri2_surf->wl_win->destroy_window_callback = NULL;
     }
  
@@ -156,7 +156,7 @@ index 3e6456234fe..43ad6420174 100644
  
     dri2_fini_surface(surf);
     free(surf);
-@@ -642,20 +741,16 @@ get_back_bo(struct dri2_egl_surface *dri2_surf)
+@@ -628,20 +727,16 @@ get_back_bo(struct dri2_egl_surface *dri2_surf)
  
  
  static void
@@ -180,7 +180,7 @@ index 3e6456234fe..43ad6420174 100644
     buffer->name = name;
     buffer->pitch = pitch;
     buffer->flags = 0;
-@@ -670,12 +765,28 @@ back_bo_to_dri_buffer(struct dri2_egl_surface *dri2_surf, __DRIbuffer *buffer)
+@@ -656,12 +751,28 @@ back_bo_to_dri_buffer(struct dri2_egl_surface *dri2_surf, __DRIbuffer *buffer)
     }
  }
  
@@ -196,7 +196,7 @@ index 3e6456234fe..43ad6420174 100644
 +   bo_to_dri_buffer(dri2_dpy, __DRI_BUFFER_BACK_LEFT,
 +                    dri2_surf->back->dri_image, buffer);
 +}
- 
++
 +static void
 +front_bo_to_dri_buffer(struct dri2_egl_display *dri2_dpy,
 +                       struct dri2_egl_surface *dri2_surf,
@@ -205,15 +205,15 @@ index 3e6456234fe..43ad6420174 100644
 +   bo_to_dri_buffer(dri2_dpy, __DRI_BUFFER_FRONT_LEFT,
 +                    dri2_surf->front, buffer);
 +}
-+
+ 
 +static int
 +update_buffers(struct dri2_egl_display *dri2_dpy,
 +               struct dri2_egl_surface *dri2_surf)
 +{
-    if (dri2_surf->base.Width != dri2_surf->wl_win->width ||
-        dri2_surf->base.Height != dri2_surf->wl_win->height) {
- 
-@@ -715,12 +826,13 @@ update_buffers(struct dri2_egl_surface *dri2_surf)
+    if (dri2_surf->wl_win &&
+        (dri2_surf->base.Width != dri2_surf->wl_win->width ||
+         dri2_surf->base.Height != dri2_surf->wl_win->height)) {
+@@ -703,12 +814,13 @@ update_buffers(struct dri2_egl_surface *dri2_surf)
  }
  
  static int
@@ -229,7 +229,7 @@ index 3e6456234fe..43ad6420174 100644
  }
  
  static __DRIbuffer *
-@@ -730,17 +842,25 @@ dri2_wl_get_buffers_with_format(__DRIdrawable * driDrawable,
+@@ -718,17 +830,25 @@ dri2_wl_get_buffers_with_format(__DRIdrawable * driDrawable,
                                  int *out_count, void *loaderPrivate)
  {
     struct dri2_egl_surface *dri2_surf = loaderPrivate;
@@ -259,7 +259,7 @@ index 3e6456234fe..43ad6420174 100644
           break;
        default:
           local = dri2_egl_surface_alloc_local_buffer(dri2_surf, attachments[i],
-@@ -810,12 +930,30 @@ image_get_buffers(__DRIdrawable *driDrawable,
+@@ -798,12 +918,30 @@ image_get_buffers(__DRIdrawable *driDrawable,
                    struct __DRIimageList *buffers)
  {
     struct dri2_egl_surface *dri2_surf = loaderPrivate;
@@ -276,13 +276,13 @@ index 3e6456234fe..43ad6420174 100644
 +   {
 +      if (update_buffers(dri2_dpy, dri2_surf) < 0)
 +         return 0;
-+
-+      buffers->image_mask |= __DRI_IMAGE_BUFFER_BACK;
-+      buffers->back = dri2_surf->back->dri_image;
-+   }
  
 -   buffers->image_mask = __DRI_IMAGE_BUFFER_BACK;
 -   buffers->back = dri2_surf->back->dri_image;
++      buffers->image_mask |= __DRI_IMAGE_BUFFER_BACK;
++      buffers->back = dri2_surf->back->dri_image;
++   }
++
 +   if (buffer_mask & __DRI_IMAGE_BUFFER_FRONT)
 +   {
 +      if (allocate_front_buffer(dri2_dpy, dri2_surf, EGL_FALSE) < 0)
@@ -294,17 +294,17 @@ index 3e6456234fe..43ad6420174 100644
  
     return 1;
  }
-@@ -1066,6 +1204,9 @@ dri2_wl_swap_buffers_with_damage(_EGLDisplay *disp,
+@@ -1054,6 +1192,9 @@ dri2_wl_swap_buffers_with_damage(_EGLDisplay *disp,
     struct dri2_egl_display *dri2_dpy = dri2_egl_display(disp);
     struct dri2_egl_surface *dri2_surf = dri2_egl_surface(draw);
  
 +   if (draw->Type != EGL_WINDOW_BIT)
 +      return EGL_TRUE;
 +
-    while (dri2_surf->throttle_callback != NULL)
-       if (wl_display_dispatch_queue(dri2_dpy->wl_dpy,
-                                     dri2_surf->wl_queue) == -1)
-@@ -1077,7 +1218,7 @@ dri2_wl_swap_buffers_with_damage(_EGLDisplay *disp,
+    if (!dri2_surf->wl_win)
+       return _eglError(EGL_BAD_NATIVE_WINDOW, "dri2_swap_buffers");
+ 
+@@ -1068,7 +1209,7 @@ dri2_wl_swap_buffers_with_damage(_EGLDisplay *disp,
  
     /* Make sure we have a back buffer in case we're swapping without ever
      * rendering. */
@@ -313,7 +313,7 @@ index 3e6456234fe..43ad6420174 100644
        return _eglError(EGL_BAD_ALLOC, "dri2_swap_buffers");
  
     if (draw->SwapInterval > 0) {
-@@ -1162,9 +1303,13 @@ dri2_wl_swap_buffers_with_damage(_EGLDisplay *disp,
+@@ -1153,9 +1294,13 @@ dri2_wl_swap_buffers_with_damage(_EGLDisplay *disp,
  static EGLint
  dri2_wl_query_buffer_age(_EGLDisplay *disp, _EGLSurface *surface)
  {
@@ -328,7 +328,7 @@ index 3e6456234fe..43ad6420174 100644
        _eglError(EGL_BAD_ALLOC, "dri2_query_buffer_age");
        return -1;
     }
-@@ -1385,6 +1530,7 @@ static const struct dri2_egl_display_vtbl dri2_wl_display_vtbl = {
+@@ -1376,6 +1521,7 @@ static const struct dri2_egl_display_vtbl dri2_wl_display_vtbl = {
     .authenticate = dri2_wl_authenticate,
     .create_window_surface = dri2_wl_create_window_surface,
     .create_pixmap_surface = dri2_wl_create_pixmap_surface,
@@ -336,7 +336,7 @@ index 3e6456234fe..43ad6420174 100644
     .destroy_surface = dri2_wl_destroy_surface,
     .create_image = dri2_create_image_khr,
     .swap_buffers = dri2_wl_swap_buffers,
-@@ -1427,7 +1573,7 @@ dri2_wl_add_configs_for_visuals(_EGLDisplay *disp)
+@@ -1418,7 +1564,7 @@ dri2_wl_add_configs_for_visuals(_EGLDisplay *disp)
              continue;
  
           dri2_conf = dri2_add_config(disp, dri2_dpy->driver_configs[i],
@@ -345,7 +345,7 @@ index 3e6456234fe..43ad6420174 100644
           if (dri2_conf) {
              if (dri2_conf->base.ConfigID == count + 1)
                 count++;
-@@ -1662,6 +1808,23 @@ dri2_wl_swrast_get_stride_for_format(int format, int w)
+@@ -1654,6 +1800,23 @@ dri2_wl_swrast_get_stride_for_format(int format, int w)
     return w * (dri2_wl_visuals[visual_idx].bpp / 8);
  }
  
@@ -369,7 +369,7 @@ index 3e6456234fe..43ad6420174 100644
  static EGLBoolean
  dri2_wl_swrast_allocate_buffer(struct dri2_egl_surface *dri2_surf,
                                 int format, int w, int h,
-@@ -1782,8 +1945,24 @@ swrast_update_buffers(struct dri2_egl_surface *dri2_surf)
+@@ -1775,8 +1938,24 @@ swrast_update_buffers(struct dri2_egl_surface *dri2_surf)
     return 0;
  }
  
@@ -395,7 +395,7 @@ index 3e6456234fe..43ad6420174 100644
  {
     /* if there has been a resize: */
     if (!dri2_surf->current)
-@@ -1853,7 +2032,9 @@ dri2_wl_swrast_get_drawable_info(__DRIdrawable * draw,
+@@ -1846,7 +2025,9 @@ dri2_wl_swrast_get_drawable_info(__DRIdrawable * draw,
  {
     struct dri2_egl_surface *dri2_surf = loaderPrivate;
  
@@ -406,7 +406,7 @@ index 3e6456234fe..43ad6420174 100644
     *x = 0;
     *y = 0;
     *w = dri2_surf->base.Width;
-@@ -1872,7 +2053,11 @@ dri2_wl_swrast_get_image(__DRIdrawable * read,
+@@ -1865,7 +2046,11 @@ dri2_wl_swrast_get_image(__DRIdrawable * read,
     int dst_stride = copy_width;
     char *src, *dst;
  
@@ -419,7 +419,7 @@ index 3e6456234fe..43ad6420174 100644
     if (!src) {
        memset(data, 0, copy_width * h);
        return;
-@@ -1910,14 +2095,20 @@ dri2_wl_swrast_put_image2(__DRIdrawable * draw, int op,
+@@ -1903,14 +2088,20 @@ dri2_wl_swrast_put_image2(__DRIdrawable * draw, int op,
  
     assert(copy_width <= stride);
  
@@ -447,7 +447,7 @@ index 3e6456234fe..43ad6420174 100644
  
     dst += x_offset;
     dst += y * dst_stride;
-@@ -1935,7 +2126,9 @@ dri2_wl_swrast_put_image2(__DRIdrawable * draw, int op,
+@@ -1928,7 +2119,9 @@ dri2_wl_swrast_put_image2(__DRIdrawable * draw, int op,
        src += stride;
        dst += dst_stride;
     }
@@ -458,7 +458,7 @@ index 3e6456234fe..43ad6420174 100644
  }
  
  static void
-@@ -2000,6 +2193,7 @@ static const struct dri2_egl_display_vtbl dri2_wl_swrast_display_vtbl = {
+@@ -1996,6 +2189,7 @@ static const struct dri2_egl_display_vtbl dri2_wl_swrast_display_vtbl = {
     .authenticate = NULL,
     .create_window_surface = dri2_wl_create_window_surface,
     .create_pixmap_surface = dri2_wl_create_pixmap_surface,
@@ -467,5 +467,5 @@ index 3e6456234fe..43ad6420174 100644
     .create_image = dri2_create_image_khr,
     .swap_buffers = dri2_wl_swrast_swap_buffers,
 -- 
-2.17.1
+2.25.1
 

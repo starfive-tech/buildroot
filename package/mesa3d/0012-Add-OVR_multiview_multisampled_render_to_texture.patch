@@ -1,7 +1,7 @@
-From 95383627bc57aa19f0e5d40ae8c91f4d91230708 Mon Sep 17 00:00:00 2001
+From 91ea37486db99fd403654ebff2a0a8401f7cd600 Mon Sep 17 00:00:00 2001
 From: Brendan King <Brendan.King@imgtec.com>
 Date: Mon, 11 Jul 2016 13:29:51 +0100
-Subject: [PATCH 13/50] Add OVR_multiview_multisampled_render_to_texture
+Subject: [PATCH 12/67] Add OVR_multiview_multisampled_render_to_texture
 
 ---
  ...ltiview_multisampled_render_to_texture.xml | 21 +++++++++++++++++++
@@ -38,7 +38,7 @@ index 00000000000..86bebc728e9
 +
 +</OpenGLAPI>
 diff --git a/src/mapi/glapi/gen/es_EXT.xml b/src/mapi/glapi/gen/es_EXT.xml
-index 6aea8c55fac..359cc9ca8cf 100644
+index b3432820ba6..fe8f27e1e6f 100644
 --- a/src/mapi/glapi/gen/es_EXT.xml
 +++ b/src/mapi/glapi/gen/es_EXT.xml
 @@ -1459,6 +1459,9 @@
@@ -52,17 +52,17 @@ index 6aea8c55fac..359cc9ca8cf 100644
  <xi:include href="EXT_shader_pixel_local_storage2.xml" xmlns:xi="http://www.w3.org/2001/XInclude"/>
  
 diff --git a/src/mapi/glapi/gen/static_data.py b/src/mapi/glapi/gen/static_data.py
-index 015e4efed7a..d13dc915d6f 100644
+index 73625c7fe41..dc6bdc9dcce 100644
 --- a/src/mapi/glapi/gen/static_data.py
 +++ b/src/mapi/glapi/gen/static_data.py
-@@ -1691,6 +1691,7 @@ offsets = {
-     "FramebufferTexture2DDownsampleIMG" : 1655,
-     "FramebufferTextureLayerDownsampleIMG" : 1656,
-     "FramebufferTextureMultiviewOVR" : 1657,
-+    "FramebufferTextureMultisampleMultiviewOVR" : 1658,
+@@ -1703,6 +1703,7 @@ offsets = {
+     "FramebufferTexture2DDownsampleIMG" : 1667,
+     "FramebufferTextureLayerDownsampleIMG" : 1668,
+     "FramebufferTextureMultiviewOVR" : 1669,
++    "FramebufferTextureMultisampleMultiviewOVR" : 1670,
  }
  
  functions = [
 -- 
-2.17.1
+2.25.1
 
