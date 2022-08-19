@@ -42,6 +42,17 @@ static const enum_value_t g_iomthd_values[] = {
     { IO_METHOD_READ,    "READ"}
 };
 
+//Only support for using drm mmap dmabuf 0 & 1
+typedef struct {
+    volatile uint8_t readable[2];
+    volatile uint8_t foreground_index;
+} pingpong_buffer_index_t;
+
+static pingpong_buffer_index_t g_pp_index = {
+    .readable = { 0, 0 },
+    .foreground_index = 0,
+};
+
 typedef struct {
     V4l2Param_t v4l2_param;
     FBParam_t fb_param;
@@ -61,7 +72,6 @@ ConfigParam_t *gp_cfg_param = NULL;
 
 static int g_drm_buf_next_idx = -1;
 static int g_drm_buf_curr_idx = 0;
-static int drm_buf_id = 0;
 
 static void alloc_default_config(ConfigParam_t **pp_data)
 {
@@ -407,15 +417,15 @@ static int frameRead(void)
     struct v4l2_buffer buf;
     V4l2Param_t *pv4l2_param = &gp_cfg_param->v4l2_param;
     uint8_t *dst = NULL;
-    int next_index;
+    int background_index;
 
     if (STF_DISP_FB == gp_cfg_param->disp_type) {
         dst = gp_cfg_param->fb_param.screen_buf;
     } else if (STF_DISP_DRM == gp_cfg_param->disp_type &&
             IO_METHOD_DMABUF != gp_cfg_param->io_mthd) {
+        background_index = !g_pp_index.foreground_index;
         //Get ready to compose the backgound buffer
-        next_index = (drm_buf_id + 1) % 2;
-        dst = gp_cfg_param->drm_param.dev_head->bufs[next_index].buf;
+        dst = gp_cfg_param->drm_param.dev_head->bufs[background_index].buf;
     } else {
         LOG(STF_LEVEL_LOG, "Not display\n");
     }
@@ -450,19 +460,20 @@ static int frameRead(void)
                 buf.index, gp_cfg_param->v4l2_param.n_buffers);
         imageProcess((uint8_t *)(pv4l2_param->pBuffers[buf.index].start), dst, buf.timestamp);
         if (STF_DISP_DRM == gp_cfg_param->disp_type) {
-            drm_buf_id = next_index; // Move background buffer to foreground
+            g_pp_index.readable[background_index] = 1;
             static int first_frame = 1;
             if(first_frame) {
                 drm_dev_t* dev = gp_cfg_param->drm_param.dev_head;
+                g_pp_index.foreground_index = background_index;
                 /* First buffer to DRM */
                 if (drmModeSetCrtc(gp_cfg_param->drm_param.fd,
-                                   dev->crtc_id, dev->bufs[drm_buf_id].fb_id,
+                                   dev->crtc_id, dev->bufs[g_pp_index.foreground_index].fb_id,
                                    0, 0, &dev->conn_id, 1, &dev->mode)) {
                     fatal("drmModeSetCrtc() failed");
                 }
                 /* First flip */
                 drmModePageFlip(gp_cfg_param->drm_param.fd,
-                                dev->crtc_id, dev->bufs[drm_buf_id].fb_id,
+                                dev->crtc_id, dev->bufs[g_pp_index.foreground_index].fb_id,
                                 DRM_MODE_PAGE_FLIP_EVENT, dev);
                 first_frame = 0;
             }
@@ -552,12 +563,23 @@ static void page_flip_handler(int fd, unsigned int frame,
                     DRM_MODE_PAGE_FLIP_EVENT, dev);
 }
 
+static uint8_t check_background_buf_readable(void)
+{
+    return g_pp_index.readable[!g_pp_index.foreground_index];
+}
+
 static void mmap_page_flip_handler(int fd, unsigned int frame,
             unsigned int sec, unsigned int usec,
             void *data)
 {
+    if(check_background_buf_readable()) {
+        //Move background buffer to foreground
+        g_pp_index.readable[g_pp_index.foreground_index] = 0;
+        g_pp_index.foreground_index = !g_pp_index.foreground_index;
+    }
+
     drmModePageFlip(gp_cfg_param->drm_param.fd, gp_cfg_param->drm_param.dev_head->crtc_id,
-                    gp_cfg_param->drm_param.dev_head->bufs[drm_buf_id].fb_id,
+                    gp_cfg_param->drm_param.dev_head->bufs[g_pp_index.foreground_index].fb_id,
                     DRM_MODE_PAGE_FLIP_EVENT, gp_cfg_param->drm_param.dev_head);
 }
 
@@ -999,7 +1021,7 @@ int main(int argc, char **argv)
     }
 
     // prepare and start v4l2 capturing
-    sft_v4l2_prepare_capturing(&gp_cfg_param->v4l2_param, gp_cfg_param->dmabufs, BUFCOUNT);
+    sft_v4l2_prepare_capturing(&gp_cfg_param->v4l2_param, gp_cfg_param->dmabufs, gp_cfg_param->disp_type);
     sft_v4l2_start_capturing(&(gp_cfg_param->v4l2_param));
 
     // process frames

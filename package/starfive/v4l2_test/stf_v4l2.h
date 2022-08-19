@@ -41,7 +41,8 @@ extern void stf_v4l2_open(V4l2Param_t *param, char *device_name);
 extern void stf_v4l2_close(V4l2Param_t *param);
 extern void stf_v4l2_init(V4l2Param_t *param);
 extern void stf_v4l2_uninit(V4l2Param_t *param);
-extern void sft_v4l2_prepare_capturing(V4l2Param_t *param, int *dmabufs, int count);
+extern void sft_v4l2_prepare_capturing(V4l2Param_t *param,
+                                       int *dmabufs, STF_DISP_TYPE disp_type);
 extern void sft_v4l2_start_capturing(V4l2Param_t *param);
 extern void stf_v4l2_stop_capturing(V4l2Param_t *param);
 

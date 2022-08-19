@@ -406,14 +406,14 @@ static void stf_v4l2_readInit(V4l2Param_t *param)
     LOG(STF_LEVEL_TRACE, "Exit\n");
 }
 
-static void stf_v4l2_mmapInit(V4l2Param_t *param)
+static void stf_v4l2_mmapInit(V4l2Param_t *param, int buf_count)
 {
     int i = 0;
     struct v4l2_requestbuffers req;
     CLEAR(req);
 
     LOG(STF_LEVEL_TRACE, "Enter\n");
-    req.count = BUFCOUNT;
+    req.count = buf_count;
     req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     req.memory = V4L2_MEMORY_MMAP;
     if (-1 == xioctl(param->fd, VIDIOC_REQBUFS, &req)) {
@@ -556,7 +556,7 @@ static void stf_v4l2_userptrInit(V4l2Param_t *param)
     param->image_size = buffer_size;
 }
 
-void sft_v4l2_prepare_capturing(V4l2Param_t *param, int *dmabufs, int count)
+void sft_v4l2_prepare_capturing(V4l2Param_t *param, int *dmabufs, STF_DISP_TYPE disp_type)
 {
     LOG(STF_LEVEL_TRACE, "Enter\n");
     switch (param->io_mthd) {
@@ -565,7 +565,11 @@ void sft_v4l2_prepare_capturing(V4l2Param_t *param, int *dmabufs, int count)
         break;
 
     case IO_METHOD_MMAP:
-        stf_v4l2_mmapInit(param);
+        if(STF_DISP_DRM == disp_type) {
+            stf_v4l2_mmapInit(param, PINGPONG_BUFCOUNT);
+        } else {
+            stf_v4l2_mmapInit(param, BUFCOUNT);
+        }
         break;
 
     case IO_METHOD_USERPTR:
@@ -573,7 +577,7 @@ void sft_v4l2_prepare_capturing(V4l2Param_t *param, int *dmabufs, int count)
         break;
 
     case IO_METHOD_DMABUF:
-        stf_v4l2_dmabufInit(param, dmabufs, count);
+        stf_v4l2_dmabufInit(param, dmabufs, BUFCOUNT);
         break;
 
     default:

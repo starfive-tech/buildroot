@@ -26,7 +26,8 @@
 #define TEST_VERSION "v0.0.1"
 #endif
 
-#define BUFCOUNT 4
+#define PINGPONG_BUFCOUNT   2   /* For pingpong buffer mapping in drm + mmap mode*/
+#define BUFCOUNT            4
 
 #define CLEAR(x)  memset (&(x), 0, sizeof (x))
 #define PCLEAR(x) memset ((x), 0, sizeof (*x))
