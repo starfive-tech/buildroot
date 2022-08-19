@@ -37,6 +37,7 @@ typedef struct drm_dev_t {
 typedef struct DRMParam_t {
     drm_dev_t* dev_head;
     int fd;
+    int connector_id;
 } DRMParam_t;
 
 

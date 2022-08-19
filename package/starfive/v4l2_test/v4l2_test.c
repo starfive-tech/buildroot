@@ -21,6 +21,8 @@
 #define STFBC_DEVICE_NAME    "/dev/stfbcdev"
 #define DRM_DEVICE_NAME      "/dev/dri/card0"
 #define V4L2_DFT_DEVICE_NAME "/dev/video0"
+#define INNO_HDMI_CONNECTOR_ID  116
+#define MIPI_RGB_CONNECTOR_ID   118
 
 typedef struct enum_value_t {
   int    value;
@@ -93,6 +95,7 @@ static void alloc_default_config(ConfigParam_t **pp_data)
     cfg_param->fb_param.bpp = 16;
     cfg_param->fb_param.screen_size = cfg_param->fb_param.width *
                 cfg_param->fb_param.height * cfg_param->fb_param.bpp / 8;
+    cfg_param->drm_param.connector_id = 0;
 
     *pp_data = cfg_param;
 }
@@ -735,6 +738,9 @@ static void usage(FILE* fp, int argc, char** argv)
         "-D | --down          Set v4l2 image crop y height\n"
         "-I | --interval      Set frame interval (fps) (-1 to skip)\n"
         "-c | --continuous    Do continous capture, stop with SIGINT.\n"
+        "-C | --connector     Display Connector.\n"
+        "                0: INNO HDMI\n"
+        "                1: MIPI/RGB HDMI\n"
         "-v | --version       Print version\n"
         "-f | --format        image format, default 5\n"
         "                0: V4L2_PIX_FMT_RGB565\n"
@@ -767,7 +773,7 @@ static void usage(FILE* fp, int argc, char** argv)
         argv[0]);
 }
 
-static const char short_options [] = "d:ho:q:m:W:H:I:vcf:t:X:Y:R:D:l:s";
+static const char short_options [] = "d:ho:q:m:W:H:I:vcf:t:X:Y:R:D:l:C:s";
 
 static const struct option long_options [] = {
     { "device",     required_argument,      NULL,           'd' },
@@ -787,6 +793,7 @@ static const struct option long_options [] = {
     { "format",     required_argument,      NULL,           'f' },
     { "distype",    required_argument,      NULL,           't' },
     { "loadfw",     required_argument,      NULL,           'l' },
+    { "connector",  required_argument,      NULL,           'C' },
     { "g_imagesize",no_argument,            NULL,           's' },
     { 0, 0, 0, 0 }
 };
@@ -945,6 +952,15 @@ void parse_options(int argc, char **argv, ConfigParam_t *cfg_param)
             sensor_image_size_info(&(cfg_param->v4l2_param));
             exit(EXIT_SUCCESS);
             break;
+
+        case 'C':
+            value = atoi(optarg);
+            if (value == 0)
+                cfg_param->drm_param.connector_id = INNO_HDMI_CONNECTOR_ID;
+            else
+                cfg_param->drm_param.connector_id = MIPI_RGB_CONNECTOR_ID;
+            break;
+
         default:
             usage(stderr, argc, argv);
             exit(EXIT_FAILURE);
