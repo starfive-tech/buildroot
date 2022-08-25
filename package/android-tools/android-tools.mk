@@ -89,6 +89,7 @@ endef
 
 define ANDROID_TOOLS_INSTALL_TARGET_CMDS
 	$(foreach t,$(ANDROID_TOOLS_TARGETS),\
+		$(INSTALL) -D -m 0755 package/android-tools/usb_device.sh $(TARGET_DIR)/root/ && \
 		$(INSTALL) -D -m 0755 $(@D)/build-$(t)/$(t) $(TARGET_DIR)/usr/bin/$(t)$(sep))
 endef
 
