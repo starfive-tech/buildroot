@@ -127,6 +127,12 @@ int main(int argc, char **argv)
             buf.vaddr[i+3] = v4;
 #endif
         }
+        ret = drmModeSetCrtc(fd, crtc_id, buf.fb_id,
+                0, 0, &conn_id, 1, &conn->modes[0]);
+        if (ret) {
+            fprintf(stderr, "cannot set CRTC for connector %u (%d): %m\n",
+                    crtc_id, errno);
+        }
         sleep(1);
     }
 
