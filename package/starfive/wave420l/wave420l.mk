@@ -59,6 +59,7 @@ define WAVE420L_INSTALL_STAGING_CMDS
 	$(INSTALL) -D -m 0644 $(@D)/vdi/vdi.h                                                    $(STAGING_DIR)/usr/include/wave420l/vdi/vdi.h
 	$(INSTALL) -D -m 0644 $(@D)/vdi/vdi_osal.h                                               $(STAGING_DIR)/usr/include/wave420l/vdi/vdi_osal.h
 	$(INSTALL) -D -m 0644 $(@D)/config.h                                                     $(STAGING_DIR)/usr/include/wave420l/config.h
+	$(INSTALL) -D -m 0644 $(@D)/libsfenc.so 						 $(STAGING_DIR)/usr/lib/libsfenc.so
 
 endef
 
