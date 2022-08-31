@@ -145,8 +145,6 @@ endef
 define BUSYBOX_INSTALL_MDEV_CONF
 	$(INSTALL) -D -m 0644 package/busybox/mdev.conf \
 		$(TARGET_DIR)/etc/mdev.conf
-	$(INSTALL) -D -m 0644 package/busybox/blacklist.conf \
-		$(TARGET_DIR)/etc/modprobe.d/blacklist.conf
 endef
 define BUSYBOX_SET_MDEV
 	$(call KCONFIG_ENABLE_OPT,CONFIG_MDEV)
@@ -155,6 +153,14 @@ define BUSYBOX_SET_MDEV
 	$(call KCONFIG_ENABLE_OPT,CONFIG_FEATURE_MDEV_LOAD_FIRMWARE)
 endef
 endif
+
+define BUSYBOX_INSTALL_KMOD_BLACKLIST
+	if [ grep -q CONFIG_FEATURE_MODPROBE_BLACKLIST=y $(@D)/.config ] || \
+		[ $(BR2_PACKAGE_KMOD)=="y" ]; then \
+		$(INSTALL) -D -m 0644 package/busybox/blacklist.conf \
+			$(TARGET_DIR)/etc/modprobe.d/blacklist.conf; \
+	fi
+endef
 
 # sha passwords need USE_BB_CRYPT_SHA
 ifeq ($(BR2_TARGET_GENERIC_PASSWD_SHA256)$(BR2_TARGET_GENERIC_PASSWD_SHA512),y)
@@ -381,6 +387,8 @@ define BUSYBOX_INSTALL_TARGET_CMDS
 	$(BUSYBOX_INSTALL_UDHCPC_SCRIPT)
 	$(BUSYBOX_INSTALL_ZCIP_SCRIPT)
 	$(BUSYBOX_INSTALL_MDEV_CONF)
+	$(BUSYBOX_INSTALL_KMOD_BLACKLIST)
+
 endef
 
 # Install the sysvinit scripts, for the moment, but not those that already
