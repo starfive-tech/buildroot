@@ -56,6 +56,7 @@ define WAVE511_INSTALL_STAGING_CMDS
 	$(INSTALL) -D -m 0644 $(@D)/vpuapi/vpuerror.h                                            $(STAGING_DIR)/usr/include/wave511/vpuapi/vpuerror.h
 	$(INSTALL) -D -m 0644 $(@D)/vpuapi/vputypes.h                                            $(STAGING_DIR)/usr/include/wave511/vpuapi/vputypes.h
 	$(INSTALL) -D -m 0644 $(@D)/vpuapi/vpuapifunc.h                                          $(STAGING_DIR)/usr/include/wave511/vpuapi/vpuapifunc.h
+	$(INSTALL) -D -m 0644 $(@D)/libsfdec.so 						 $(STAGING_DIR)/usr/lib/libsfdec.so
 endef
 
 define WAVE511_UNINSTALL_TARGET_CMDS
