@@ -1,0 +1,78 @@
+From d98b2d573de97ba4ec6bf10bdea51d5fb2484d4a Mon Sep 17 00:00:00 2001
+From: "arvin.zhu" <arvin.zhu@starfivetech.com>
+Date: Thu, 8 Sep 2022 09:43:32 +0800
+Subject: [PATCH] omxdec: add delay for decoding
+
+add delay delay for decoding
+
+Signed-off-by: arvin.zhu <arvin.zhu@starfivetech.com>
+---
+ libavcodec/omxdec.c | 21 ++++++++++++++-------
+ 1 file changed, 14 insertions(+), 7 deletions(-)
+ mode change 100644 => 100755 libavcodec/omxdec.c
+
+diff --git a/libavcodec/omxdec.c b/libavcodec/omxdec.c
+old mode 100644
+new mode 100755
+index 32f39f3..5b63ede
+--- a/libavcodec/omxdec.c
++++ b/libavcodec/omxdec.c
+@@ -262,7 +262,7 @@ typedef struct OMXCodecContext {
+ 
+     int mutex_cond_inited;
+ 
+-    int eos_sent, got_eos, evnet_bufferflag;
++    int eos_sent, got_eos, evnet_bufferflag, first_get_outbuffer;
+ 
+ 	int extradata_sent;
+ 
+@@ -791,7 +791,10 @@ static int omx_decode_frame(AVCodecContext *avctx, void *data,
+ 	int linesize[4];
+ 
+     if (pkt->size) {
+-	
++        //VPU init and fill buffer slow, so empty buf sleep to send before get vpu fill buf.
++        if(!s->first_get_outbuffer)
++        av_usleep(100000);
++
+         buffer = get_buffer(&s->input_mutex, &s->input_cond,
+                             &s->num_free_in_buffers, s->free_in_buffers, 1);
+ 
+@@ -830,14 +833,16 @@ static int omx_decode_frame(AVCodecContext *avctx, void *data,
+ 	        return AVERROR_UNKNOWN;
+ 	    }
+     } else if (!s->eos_sent) {
+-		
++        if(!s->first_get_outbuffer)
++        av_usleep(1000000);
++
+         buffer = get_buffer(&s->input_mutex, &s->input_cond,
+                             &s->num_free_in_buffers, s->free_in_buffers, 1);
+ 
+         if(!buffer) {
+         	av_log(avctx, AV_LOG_ERROR, "get_buffer NULL\n");
+             return AVERROR(ENOMEM);
+-		}
++        }
+ 
+         buffer->nFilledLen = 0;
+         buffer->nFlags = OMX_BUFFERFLAG_EOS;
+@@ -869,10 +874,12 @@ static int omx_decode_frame(AVCodecContext *avctx, void *data,
+             }
+             break;
+         }
+-		//if (!buffer)
+-           // break;
++        // if (!buffer)
++        //     break;
++        if(!s->first_get_outbuffer)
++            s->first_get_outbuffer = 1;
+ 
+-		if(!buffer->nFilledLen){
++        if(!buffer->nFilledLen){
+             av_log(avctx, AV_LOG_ERROR, "buffer->nFilledLen %d\n",(int)buffer->nFilledLen);
+             goto end;
+         }
+-- 
+2.17.1
+
