@@ -1,5 +1,8 @@
 #!/bin/sh
 
+VID="0x1209"
+PID="0x0010"
+
 mass_storage_create()
 {
 	mkdir -p /var/sdcard/sda
@@ -21,8 +24,8 @@ mass_storage_start()
 	mkdir -p mass_storage
 	cd mass_storage
 	echo 0x0300 > bcdUSB
-	echo "0x1d6b"  > idVendor
-	echo "0x1100" > idProduct
+	echo $VID  > idVendor
+	echo $PID > idProduct
 	mkdir -p strings/0x409
 	echo "01234567" > strings/0x409/serialnumber
 	echo "starfive"  > strings/0x409/manufacturer
@@ -75,8 +78,8 @@ adb_start()
 	mkdir -p adb
 	cd adb
 	echo 0x0300  > bcdUSB
-	echo "0x1d6b"> idVendor
-	echo "0x1100" > idProduct
+	echo $VID  > idVendor
+	echo $PID > idProduct
 	mkdir -p strings/0x409
 	echo "76543210" > strings/0x409/serialnumber
 	echo "starfive"  > strings/0x409/manufacturer
