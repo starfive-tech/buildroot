@@ -177,4 +177,10 @@ define PIPEWIRE_USERS
 	pipewire -1 pipewire -1 * - - audio,video PipeWire System Daemon
 endef
 
+define PIPEWIRE_INSTALL_CONF_ON_TARGET
+        $(INSTALL) -D -m 0755 package/pipewire/run_pipewire.sh $(TARGET_DIR)/root/run_pipewire.sh
+endef
+
+PIPEWIRE_POST_INSTALL_TARGET_HOOKS += PIPEWIRE_INSTALL_CONF_ON_TARGET
+
 $(eval $(meson-package))
