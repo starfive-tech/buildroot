@@ -17,7 +17,7 @@ index 398a62c..4eae679 100644
  type-name=GstOMXH265Dec
  core-name=/usr/lib/libsf-omx-il.so
 -component-name=sf.dec.decoder.h265
-+component-name=OMX.sf.video_decoder.hevc
++component-name=OMX.sf.video_decoder.hevc.internal
  in-port-index=0
  out-port-index=1
  rank=257
@@ -26,7 +26,7 @@ index 398a62c..4eae679 100644
  type-name=GstOMXH264Dec
  core-name=/usr/lib/libsf-omx-il.so
 -component-name=sf.dec.decoder.h264
-+component-name=OMX.sf.video_decoder.avc
++component-name=OMX.sf.video_decoder.avc.internal
  in-port-index=0
  out-port-index=1
  rank=257
@@ -53,7 +53,7 @@ index 398a62c..4eae679 100644
  type-name=GstOMXMJPEGDec
  core-name=/usr/lib/libsf-omx-il.so
 -component-name=sf.dec.decoder.mjpeg
-+component-name=OMX.sf.video_decoder.mjpeg
++component-name=OMX.sf.video_decoder.mjpeg.internal
  in-port-index=0
  out-port-index=1
  rank=1
