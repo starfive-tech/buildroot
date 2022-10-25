@@ -3,7 +3,6 @@
 # WAVE420L
 #
 ################################################################################
-
 WAVE420L_VERSION:=1.0.0
 WAVE420L_SITE=$(TOPDIR)/../soft_3rdpart/wave420l/code
 WAVE420L_SITE_METHOD=local
@@ -13,7 +12,6 @@ export KERNELDIR=$(TOPDIR)/../work/linux
 
 define WAVE420L_BUILD_CMDS
 	$(TARGET_MAKE_ENV) $(MAKE) -C $(@D) -f $(@D)/WaveEncoder_buildroot.mak
-	# $(TARGET_MAKE_ENV) $(MAKE) -C $(@D) -f $(@D)/WaveEncDriver_buildroot.mak
 endef
 
 define WAVE420L_CLEAN_CMDS
@@ -21,8 +19,6 @@ define WAVE420L_CLEAN_CMDS
 endef
 
 define WAVE420L_INSTALL_TARGET_CMDS
-	$(INSTALL) -D -m 0777 $(@D)/vdi/linux/driver/load.sh $(TARGET_DIR)/root/wave420l/venc_load.sh
-	$(INSTALL) -D -m 0777 $(@D)/vdi/linux/driver/unload.sh $(TARGET_DIR)/root/wave420l/venc_unload.sh
 	$(INSTALL) -D -m 0644 $(@D)/libsfenc.so $(TARGET_DIR)/usr/lib/libsfenc.so
 	$(INSTALL) -D -m 0644 $(WAVE420L_SITE)/../firmware/monet.bin $(TARGET_DIR)/lib/firmware/monet.bin
 	$(INSTALL) -D -m 0644 $(@D)/cfg/encoder_defconfig.cfg $(TARGET_DIR)/lib/firmware/encoder_defconfig.cfg
@@ -67,16 +63,14 @@ define WAVE420L_INSTALL_STAGING_CMDS
 endef
 
 define WAVE420L_UNINSTALL_TARGET_CMDS
-	rm -rf $(TARGET_DIR)/root/venc.ko
-	rm -rf $(TARGET_DIR)/root/venc_load.sh
-	rm -rf $(TARGET_DIR)/root/venc_unload.sh
+
 endef
 
 WAVE420L_WORK_DIR := $(TARGET_DIR)/../build/wave420l-$(WAVE420L_VERSION)
 wave420ldriver:
 ifneq ($(wildcard $(WAVE420L_WORK_DIR)/WaveEncDriver_buildroot.mak),)
-	$(TARGET_MAKE_ENV) $(MAKE) -C $(WAVE420L_WORK_DIR) -f $(WAVE420L_WORK_DIR)/WaveEncDriver_buildroot.mak
-	$(INSTALL) -D -m 0644 $(WAVE420L_WORK_DIR)/vdi/linux/driver/venc.ko $(TARGET_DIR)/root/wave420l/venc.ko
+	$(TARGET_MAKE_ENV) INSTALL_MOD_PATH=$(INSTALL_MOD_PATH) \
+		$(MAKE) -C $(WAVE420L_WORK_DIR) -f $(WAVE420L_WORK_DIR)/WaveEncDriver_buildroot.mak
 endif
 
 $(eval $(generic-package))
