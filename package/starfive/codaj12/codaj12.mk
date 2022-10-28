@@ -3,7 +3,6 @@
 # codaj12
 #
 ################################################################################
-
 # CODAJ12_VERSION:=1.0.0
 CODAJ12_SITE=$(TOPDIR)/../soft_3rdpart/codaj12
 CODAJ12_SITE_METHOD=local
@@ -13,7 +12,6 @@ export KERNELDIR=$(TOPDIR)/../work/linux
 
 define CODAJ12_BUILD_CMDS
 	$(TARGET_MAKE_ENV) $(MAKE) -C $(@D) -f $(@D)/codaj12_buildroot.mak
-#	$(TARGET_MAKE_ENV) $(MAKE) -C $(@D) -f $(@D)/codaj12Driver_buildroot.mak
 endef
 
 define CODAJ12_CLEAN_CMDS
@@ -21,12 +19,8 @@ define CODAJ12_CLEAN_CMDS
 endef
 
 define CODAJ12_INSTALL_TARGET_CMDS
-	$(INSTALL) -D -m 0777 $(@D)/jdi/linux/driver/load.sh $(TARGET_DIR)/root/codaj12/load.sh
-	$(INSTALL) -D -m 0777 $(@D)/jdi/linux/driver/unload.sh $(TARGET_DIR)/root/codaj12/unload.sh
 	$(INSTALL) -D -m 0644 $(@D)/libcodadec.so $(TARGET_DIR)/usr/lib/libcodadec.so
-#	$(INSTALL) -D -m 0644 $(@D)/jdi/linux/driver/jpu.ko $(TARGET_DIR)/root/codaj12/jpu.ko
 endef
-
 
 define CODAJ12_INSTALL_STAGING_CMDS
 	mkdir -p $(STAGING_DIR)/usr/include/codaj12
@@ -51,16 +45,14 @@ define CODAJ12_INSTALL_STAGING_CMDS
 endef
 
 define CODAJ12_UNINSTALL_TARGET_CMDS
-	rm -rf $(TARGET_DIR)/root/codaj12/jpu.ko
-	rm -rf $(TARGET_DIR)/root/codaj12/load.sh
-	rm -rf $(TARGET_DIR)/root/codaj12/unload.sh
+
 endef
 
 codaj12_WORK_DIR := $(TARGET_DIR)/../build/codaj12
 codaj12driver:
 ifneq ($(wildcard $(codaj12_WORK_DIR)/codaj12Driver_buildroot.mak),)
-	$(TARGET_MAKE_ENV) $(MAKE) -C $(codaj12_WORK_DIR) -f $(codaj12_WORK_DIR)/codaj12Driver_buildroot.mak
-	$(INSTALL) -D -m 0644 $(codaj12_WORK_DIR)/jdi/linux/driver/jpu.ko $(TARGET_DIR)/root/codaj12/jpu.ko
+	$(TARGET_MAKE_ENV) INSTALL_MOD_PATH=$(INSTALL_MOD_PATH) \
+		$(MAKE) -C $(codaj12_WORK_DIR) -f $(codaj12_WORK_DIR)/codaj12Driver_buildroot.mak
 endif
 
 $(eval $(generic-package))
