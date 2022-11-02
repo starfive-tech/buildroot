@@ -11,6 +11,13 @@ ISPSDK_SITE_METHOD = local
 ISPSDK_SUPPORTS_IN_SOURCE_BUILD = NO
 ISPSDK_DEPENDENCIES = jpeg libv4l libdrm
 
+define ISPSDK_INSTALL_TARGET_CMDS
+	install -m 0755 -D package/starfive/ispsdk/isp_ctrl_daemon.sh \
+		$(TARGET_DIR)/usr/bin/isp_ctrl_daemon.sh
+	install -m 0755 -D package/starfive/ispsdk/S70isp-ctrl \
+		$(TARGET_DIR)/etc/init.d/S70isp-ctrl
+endef
+
 # default CMAKE_INSTALL_PREFIX is $(TARGET_DIR)/usr, change to below
 # note: not have -DCROSS_COMPILE
 ISPSDK_CONF_OPTS = -DRUN_PLATFORM="RISCV" \
