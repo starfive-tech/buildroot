@@ -18,8 +18,21 @@ define IFUPDOWN_SCRIPTS_LOCALHOST
 endef
 
 IFUPDOWN_SCRIPTS_DHCP_IFACE = $(call qstrip,$(BR2_SYSTEM_DHCP))
+IFUPDOWN_SCRIPTS_DHCP_HOTPLUG = $(call qstrip,$(BR2_PACKAGE_IFPLUGD))
 
 ifneq ($(IFUPDOWN_SCRIPTS_DHCP_IFACE),)
+ifneq ($(IFUPDOWN_SCRIPTS_DHCP_HOTPLUG),)
+define IFUPDOWN_SCRIPTS_DHCP
+	( \
+		echo ; \
+		echo "allow-hotplug $(IFUPDOWN_SCRIPTS_DHCP_IFACE)"; \
+		echo "iface $(IFUPDOWN_SCRIPTS_DHCP_IFACE) inet dhcp"; \
+		echo "  pre-up /etc/network/nfs_check"; \
+		echo "  wait-delay 15"; \
+		echo "  hostname \$$(hostname)"; \
+	) >> $(TARGET_DIR)/etc/network/interfaces
+endef
+else
 define IFUPDOWN_SCRIPTS_DHCP
 	( \
 		echo ; \
@@ -30,6 +43,7 @@ define IFUPDOWN_SCRIPTS_DHCP
 		echo "  hostname \$$(hostname)"; \
 	) >> $(TARGET_DIR)/etc/network/interfaces
 endef
+endif
 define IFUPDOWN_SCRIPTS_DHCP_OPENRC
 	echo "ifup $(IFUPDOWN_SCRIPTS_DHCP_IFACE)" \
 		> $(TARGET_DIR)/etc/ifup.$(IFUPDOWN_SCRIPTS_DHCP_IFACE)
@@ -39,8 +53,21 @@ endef
 endif
 
 IFUPDOWN_SCRIPTS_DHCP_DUAL_IFACE = $(call qstrip,$(BR2_SYSTEM_DHCP_DUAL))
+IFUPDOWN_SCRIPTS_DHCP_DUAL_IFACE_HOTPLUG = $(call qstrip,$BR2_PACKAGE_IFPLUGD))
 
 ifneq ($(IFUPDOWN_SCRIPTS_DHCP_DUAL_IFACE),)
+ifneq ($(IFUPDOWN_SCRIPTS_DHCP_DUAL_IFACE_HOTPLUG),)
+define IFUPDOWN_SCRIPTS_DHCP_DUAL
+	( \
+		echo ; \
+		echo "allow-hotplug $(IFUPDOWN_SCRIPTS_DHCP_DUAL_IFACE)"; \
+		echo "iface $(IFUPDOWN_SCRIPTS_DHCP_DUAL_IFACE) inet dhcp"; \
+		echo "  pre-up /etc/network/nfs_check"; \
+		echo "  wait-delay 15"; \
+		echo "  hostname \$$(hostname)"; \
+	) >> $(TARGET_DIR)/etc/network/interfaces
+endef
+else
 define IFUPDOWN_SCRIPTS_DHCP_DUAL
 	( \
 		echo ; \
@@ -51,6 +78,7 @@ define IFUPDOWN_SCRIPTS_DHCP_DUAL
 		echo "  hostname \$$(hostname)"; \
 	) >> $(TARGET_DIR)/etc/network/interfaces
 endef
+endif
 define IFUPDOWN_SCRIPTS_DHCP_DUAL_OPENRC
 	echo "ifup $(IFUPDOWN_SCRIPTS_DHCP_DUAL_IFACE)" \
 		> $(TARGET_DIR)/etc/ifup.$(IFUPDOWN_SCRIPTS_DHCP_DUAL_IFACE)
