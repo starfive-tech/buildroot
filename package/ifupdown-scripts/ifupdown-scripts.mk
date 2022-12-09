@@ -18,8 +18,21 @@ define IFUPDOWN_SCRIPTS_LOCALHOST
 endef
 
 IFUPDOWN_SCRIPTS_DHCP_IFACE = $(call qstrip,$(BR2_SYSTEM_DHCP))
+IFUPDOWN_SCRIPTS_DHCP_HOTPLUG = $(call qstrip,$(BR2_PACKAGE_IFPLUGD))
 
 ifneq ($(IFUPDOWN_SCRIPTS_DHCP_IFACE),)
+ifneq ($(IFUPDOWN_SCRIPTS_DHCP_HOTPLUG),)
+define IFUPDOWN_SCRIPTS_DHCP
+	( \
+		echo ; \
+		echo "allow-hotplug $(IFUPDOWN_SCRIPTS_DHCP_IFACE)"; \
+		echo "iface $(IFUPDOWN_SCRIPTS_DHCP_IFACE) inet dhcp"; \
+		echo "  pre-up /etc/network/nfs_check"; \
+		echo "  wait-delay 15"; \
+		echo "  hostname \$$(hostname)"; \
+	) >> $(TARGET_DIR)/etc/network/interfaces
+endef
+else
 define IFUPDOWN_SCRIPTS_DHCP
 	( \
 		echo ; \
@@ -30,11 +43,47 @@ define IFUPDOWN_SCRIPTS_DHCP
 		echo "  hostname \$$(hostname)"; \
 	) >> $(TARGET_DIR)/etc/network/interfaces
 endef
+endif
 define IFUPDOWN_SCRIPTS_DHCP_OPENRC
 	echo "ifup $(IFUPDOWN_SCRIPTS_DHCP_IFACE)" \
 		> $(TARGET_DIR)/etc/ifup.$(IFUPDOWN_SCRIPTS_DHCP_IFACE)
 	echo "ifdown $(IFUPDOWN_SCRIPTS_DHCP_IFACE)" \
 		> $(TARGET_DIR)/etc/ifdown.$(IFUPDOWN_SCRIPTS_DHCP_IFACE)
+endef
+endif
+
+IFUPDOWN_SCRIPTS_DHCP_DUAL_IFACE = $(call qstrip,$(BR2_SYSTEM_DHCP_DUAL))
+IFUPDOWN_SCRIPTS_DHCP_DUAL_IFACE_HOTPLUG = $(call qstrip,$BR2_PACKAGE_IFPLUGD))
+
+ifneq ($(IFUPDOWN_SCRIPTS_DHCP_DUAL_IFACE),)
+ifneq ($(IFUPDOWN_SCRIPTS_DHCP_DUAL_IFACE_HOTPLUG),)
+define IFUPDOWN_SCRIPTS_DHCP_DUAL
+	( \
+		echo ; \
+		echo "allow-hotplug $(IFUPDOWN_SCRIPTS_DHCP_DUAL_IFACE)"; \
+		echo "iface $(IFUPDOWN_SCRIPTS_DHCP_DUAL_IFACE) inet dhcp"; \
+		echo "  pre-up /etc/network/nfs_check"; \
+		echo "  wait-delay 15"; \
+		echo "  hostname \$$(hostname)"; \
+	) >> $(TARGET_DIR)/etc/network/interfaces
+endef
+else
+define IFUPDOWN_SCRIPTS_DHCP_DUAL
+	( \
+		echo ; \
+		echo "auto $(IFUPDOWN_SCRIPTS_DHCP_DUAL_IFACE)"; \
+		echo "iface $(IFUPDOWN_SCRIPTS_DHCP_DUAL_IFACE) inet dhcp"; \
+		echo "  pre-up /etc/network/nfs_check"; \
+		echo "  wait-delay 15"; \
+		echo "  hostname \$$(hostname)"; \
+	) >> $(TARGET_DIR)/etc/network/interfaces
+endef
+endif
+define IFUPDOWN_SCRIPTS_DHCP_DUAL_OPENRC
+	echo "ifup $(IFUPDOWN_SCRIPTS_DHCP_DUAL_IFACE)" \
+		> $(TARGET_DIR)/etc/ifup.$(IFUPDOWN_SCRIPTS_DHCP_DUAL_IFACE)
+	echo "ifdown $(IFUPDOWN_SCRIPTS_DHCP_DUAL_IFACE)" \
+		> $(TARGET_DIR)/etc/ifdown.$(IFUPDOWN_SCRIPTS_DHCP_DUAL_IFACE)
 endef
 endif
 
@@ -48,6 +97,8 @@ define IFUPDOWN_SCRIPTS_INSTALL_INIT_OPENRC
 	$(IFUPDOWN_SCRIPTS_PREAMBLE)
 	$(IFUPDOWN_SCRIPTS_DHCP)
 	$(IFUPDOWN_SCRIPTS_DHCP_OPENRC)
+	$(IFUPDOWN_SCRIPTS_DHCP_DUAL)
+	$(IFUPDOWN_SCRIPTS_DHCP_DUAL_OPENRC)
 endef
 
 define IFUPDOWN_SCRIPTS_INSTALL_INIT_SYSV
@@ -56,6 +107,7 @@ define IFUPDOWN_SCRIPTS_INSTALL_INIT_SYSV
 	$(IFUPDOWN_SCRIPTS_PREAMBLE)
 	$(IFUPDOWN_SCRIPTS_LOCALHOST)
 	$(IFUPDOWN_SCRIPTS_DHCP)
+	$(IFUPDOWN_SCRIPTS_DHCP_DUAL)
 endef
 
 # ifupdown-scripts can not be selected when systemd-networkd is
@@ -67,6 +119,7 @@ define IFUPDOWN_SCRIPTS_INSTALL_INIT_SYSTEMD
 	$(IFUPDOWN_SCRIPTS_PREAMBLE)
 	$(IFUPDOWN_SCRIPTS_LOCALHOST)
 	$(IFUPDOWN_SCRIPTS_DHCP)
+	$(IFUPDOWN_SCRIPTS_DHCP_DUAL)
 endef
 
 $(eval $(generic-package))
