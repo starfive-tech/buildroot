@@ -1,0 +1,5 @@
+
+config BR2_PACKAGE_USB_WIFI
+	bool "usb wifi ecr6600u"
+	help
+	  firmware for usb wifi ecr6600u
