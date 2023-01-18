@@ -5,21 +5,24 @@ PID="0x0010"
 
 mass_storage_create()
 {
-	mkdir -p /var/sdcard/sda
-	cd /var/sdcard
-	dd if=/dev/zero of=/var/sdcard/disk.img bs=1M count=$1
-	mkdosfs -F 32 disk.img
+	mkdir -p $1
+	cd $1
+	dd if=/dev/zero of=$2.img bs=1M count=$3
+	mkdosfs -F 32 $2.img
+	mkdir -p /mnt/$2
+	mount -t vfat -o sync $2.img /mnt/$2
 }
 
 mass_storage_delete()
 {
 	echo "" > /sys/kernel/config/usb_gadget/mass_storage/functions/mass_storage.0/lun.0/file
-	umount /var/sdcard/sda
-	rm -rf /var/sdcard/disk.img
+	umount /mnt/$2
+	rm -rf $1/$2.img
 }
 
 mass_storage_start()
 {
+	umount /mnt/$2
 	cd /sys/kernel/config/usb_gadget
 	mkdir -p mass_storage
 	cd mass_storage
@@ -36,7 +39,7 @@ mass_storage_start()
 	echo "mass_storage" >  configs/config.1/strings/0x409/configuration
 	sleep 1
 	mkdir -p functions/mass_storage.0
-	echo "/var/sdcard/disk.img" > functions/mass_storage.0/lun.0/file
+	echo "$1/$2.img" > functions/mass_storage.0/lun.0/file
 	echo 1 > functions/mass_storage.0/lun.0/removable
 	echo 0 > functions/mass_storage.0/lun.0/nofua
 	ln -s functions/mass_storage.0 configs/config.1
@@ -49,25 +52,25 @@ mass_storage_stop()
 	cd /sys/kernel/config/usb_gadget/mass_storage
 	echo "" > UDC
 	echo "" > functions/mass_storage.0/lun.0/file
-	umount /var/sdcard/sda
 	rm -rf configs/config.1/mass_storage.0
 	echo "" > configs/config.1/strings/0x409/configuration
+	mount -t vfat -o sync $1/$2.img /mnt/$2
 }
 
 mass_storage_process()
 {
 	case "$1" in
 		start)
-			mass_storage_start
+			mass_storage_start $2 $3
 		;;
 		stop)
-			mass_storage_stop
+			mass_storage_stop $2 $3
 		;;
 		create)
-			mass_storage_create $2
+			mass_storage_create $2 $3 $4
 		;;
 		delete)
-			mass_storage_delete
+			mass_storage_delete $2 $3
 	;;
 	esac
 }
@@ -134,10 +137,12 @@ case "$1" in
 		adb_process $2
 	;;
 	mass_storage)
-		mass_storage_process $2 $3
+		mass_storage_process $2 $3 $4 $5
 	;;
 	*)
-	echo "Usage: $0 {adb|mass_storage} {*}"
+	echo "Usage: $0 {adb} {start/stop}"
+	echo "Usage: $0 {mass_storage} {create} {path} {imagename} {size/[Mi]}"
+	echo "Usage: $0 {mass_storage} {delete/start/stop} {path} {imagename}"
 	exit 1
 esac
 
