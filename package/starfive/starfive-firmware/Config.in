@@ -1,0 +1,31 @@
+# starfive firmware packages
+
+config BR2_PACKAGE_STARFIVE_FIRMWARE
+	bool "starfive-firmware"
+	help
+	  This package provides additional various binary firmware files
+	  based on BR2_PACKAGE_LINUX_FIRMWARE (closed binary blobs) for
+	  such devices like bluetooth, wifi cards etc.
+
+if BR2_PACKAGE_STARFIVE_FIRMWARE
+
+menu "Starfive Bluetooth firmware"
+
+config BR2_PACKAGE_STARFIVE_FIRMWARE_AP6256_BLUETOOTH
+	bool "AP6256 Bluetooth"
+	help
+	  Firmware files for AP6256 Wireless bluetooth support.
+
+endmenu # Bluetooth
+
+
+menu "Starfive WiFi firmware"
+
+config BR2_PACKAGE_STARFIVE_FIRMWARE_AP6256_SDIO_WIFI
+	bool "AP6256 SDIO Wifi"
+	help
+	  Firmware files for the AP6256 Wifi module on SDIO.
+
+endmenu # WiFi
+
+endif # BR2_PACKAGE_STARFIVE_FIRMWARE
