@@ -20,6 +20,8 @@ define STARFIVE_FIRMWARE_INSTALL_TARGET_CMDS
 	$(foreach f,$(STARFIVE_FIRMWARE_FILES), \
 		$(INSTALL) -m 0755 -D $(f) $(TARGET_DIR)/lib/firmware/; \
 	)
+	$(INSTALL) -D -m 755 package/starfive/starfive-firmware/ap6256-bluetooth/S90bluetooth $(TARGET_DIR)/etc/init.d/S90bluetooth
+
 endef
 
 $(eval $(generic-package))
