@@ -8,7 +8,12 @@ case "$1" in
 		# Set the hibernation image_size as large as the ram size.
 		total_mem=$(cat /proc/meminfo | sed -n '1p')
 		echo $((${total_mem: 10: 15}*1024)) > /sys/power/image_size
-		swapon PARTLABEL="hibernation"
+		FILE=/dev/disk/by-partlabel/hibernation
+		if [ -b "$FILE" ];then
+			swapon PARTLABEL="hibernation"
+		else
+			echo "No PARTLABEL=hibernation!"
+		fi
 		;;
 	stop)
 		swapoff PARTLABEL="hibernation"
