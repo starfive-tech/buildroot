@@ -16,7 +16,12 @@ case "$1" in
 		fi
 		;;
 	stop)
-		swapoff PARTLABEL="hibernation"
+		FILE=/dev/disk/by-partlabel/hibernation
+                if [ -b "$FILE" ];then
+			swapoff PARTLABEL="hibernation"
+		else
+			echo "No PARTLABEL=hibernation!"
+		fi
 		;;
 	*)
 		echo "Usage: $0 {start|stop}"
