@@ -1,0 +1,38 @@
+From 5f74b142f1bcb8003d6e84f71c7b958818756f3c Mon Sep 17 00:00:00 2001
+From: Andy Hu <andy.hu@starfivetech.com>
+Date: Fri, 19 May 2023 23:30:56 +0800
+Subject: [PATCH] bluez5_utils: fix the compiler issue for gcc 12.2.0
+
+fix the conflicting types for 'pause'; have '_Bool(void *)'
+which had defined in /usr/include/unistd.h is 'int pause (void)'
+
+Signed-off-by: Andy Hu <andy.hu@starfivetech.com>
+---
+ profiles/audio/media.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/profiles/audio/media.c b/profiles/audio/media.c
+index 02bf82a..0892532 100644
+--- a/profiles/audio/media.c
++++ b/profiles/audio/media.c
+@@ -1280,7 +1280,7 @@ static bool stop(void *user_data)
+ 	return media_player_send(mp, "Stop");
+ }
+ 
+-static bool pause(void *user_data)
++static bool func_pause(void *user_data)
+ {
+ 	struct media_player *mp = user_data;
+ 
+@@ -1330,7 +1330,7 @@ static struct avrcp_player_cb player_cb = {
+ 	.set_volume = set_volume,
+ 	.play = play,
+ 	.stop = stop,
+-	.pause = pause,
++	.pause = func_pause,
+ 	.next = next,
+ 	.previous = previous,
+ };
+-- 
+2.34.1
+
