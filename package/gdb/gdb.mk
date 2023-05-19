@@ -169,6 +169,15 @@ GDB_CONF_OPTS += \
 	--without-curses
 endif
 
+# Starting from GDB 11.x, gmp is needed as a dependency to build full
+# gdb. So we avoid the dependency only for GDB 10.x and the special
+# version used on ARC.
+ifeq ($(BR2_GDB_VERSION_10)$(BR2_arc):$(BR2_PACKAGE_GDB_DEBUGGER),:y)
+GDB_CONF_OPTS += \
+	--with-libgmp-prefix=$(STAGING_DIR)/usr
+GDB_DEPENDENCIES += gmp
+endif
+
 ifeq ($(BR2_PACKAGE_GDB_SERVER),y)
 GDB_CONF_OPTS += --enable-gdbserver
 GDB_DEPENDENCIES += $(TARGET_NLS_DEPENDENCIES)
