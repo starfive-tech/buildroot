@@ -6,20 +6,38 @@ DESC="bluetooth"
 NAME=bluetoothd
 DAEMON=/usr/sbin/$NAME
 
-echo 52 > /sys/class/gpio/export
-echo out > /sys/class/gpio/gpio52/direction
-echo 0 > /sys/class/gpio/gpio52/value
-sleep 1
-echo 1 > /sys/class/gpio/gpio52/value
-
 case "$1" in
   start)
 	printf "Starting $DESC: "
+	echo 52 > /sys/class/gpio/export
+	echo out > /sys/class/gpio/gpio52/direction
+
+	echo 0 > /sys/class/gpio/gpio52/value
+	sleep 1
+	echo 1 > /sys/class/gpio/gpio52/value
+
 	start-stop-daemon -S -b -x $NAME
 	brcm_patchram_plus --enable_hci --no2bytes --tosleep 200000 --baudrate 115200 --patchram /lib/firmware/BCM4345C5.hcd /dev/ttyS1 &
 	echo "OK"
 	;;
+  stop)
+        printf "Stopping $DESC: "
+        start-stop-daemon -K -x $NAME
+        echo 0 > /sys/class/gpio/gpio52/value
+        echo 52 > /sys/class/gpio/unexport
+
+        echo "OK"
+        ;;
+  restart|force-reload)
+        echo "Restarting $DESC: "
+        $0 stop
+        sleep 1
+        $0 start
+        echo ""
+        ;;
+
   *)
+	echo "Usage: $0 {start|stop|restart|force-reload}" >&2
 	exit 1
 	;;
 esac
