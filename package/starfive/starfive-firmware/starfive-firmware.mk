@@ -10,6 +10,13 @@ ifeq ($(BR2_PACKAGE_STARFIVE_FIRMWARE_AP6256_BLUETOOTH),y)
 STARFIVE_FIRMWARE_FILES += $(TOPDIR)/package/starfive/starfive-firmware/ap6256-bluetooth/BCM4345C5.hcd
 endif
 
+# RTL8852BU Bluetooth
+ifeq ($(BR2_PACKAGE_STARFIVE_FIRMWARE_RTL8852BU_BLUETOOTH),y)
+STARFIVE_FIRMWARE_FILES += $(TOPDIR)/package/starfive/starfive-firmware/rtl8852bu-bluetooth/rtl8852bu_config
+STARFIVE_FIRMWARE_FILES += $(TOPDIR)/package/starfive/starfive-firmware/rtl8852bu-bluetooth/rtl8852bu_fw
+endif
+
+
 # AP6256 SDIO Wifi
 ifeq ($(BR2_PACKAGE_STARFIVE_FIRMWARE_AP6256_SDIO_WIFI),y)
 STARFIVE_FIRMWARE_FILES += $(TOPDIR)/package/starfive/starfive-firmware/ap6256-sdio-wifi/fw_bcm43456c5_ag.bin

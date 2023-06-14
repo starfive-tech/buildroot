@@ -16,6 +16,11 @@ config BR2_PACKAGE_STARFIVE_FIRMWARE_AP6256_BLUETOOTH
 	help
 	  Firmware files for AP6256 Wireless bluetooth support.
 
+config BR2_PACKAGE_STARFIVE_FIRMWARE_RTL8852BU_BLUETOOTH
+        bool "RTL8852BU Bluetooth"
+        help
+          Firmware files for RTL8852BU Wireless bluetooth support.
+
 endmenu # Bluetooth
 
 
