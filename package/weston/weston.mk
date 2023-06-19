@@ -4,20 +4,29 @@
 #
 ################################################################################
 
-WESTON_VERSION = 9.0.0
-WESTON_SITE = https://wayland.freedesktop.org/releases
+WESTON_VERSION = 10.0.1
+WESTON_SITE = https://gitlab.freedesktop.org/wayland/weston/-/releases/$(WESTON_VERSION)/downloads
 WESTON_SOURCE = weston-$(WESTON_VERSION).tar.xz
 WESTON_LICENSE = MIT
 WESTON_LICENSE_FILES = COPYING
 WESTON_CPE_ID_VENDOR = wayland
 
 WESTON_DEPENDENCIES = host-pkgconf wayland wayland-protocols \
-	libxkbcommon pixman libpng jpeg udev cairo libinput libdrm
+	libxkbcommon pixman libpng udev cairo libinput libdrm
 
 WESTON_CONF_OPTS = \
 	-Dbackend-headless=false \
 	-Dcolor-management-colord=false \
-	-Dremoting=false
+	-Ddoc=false \
+	-Dremoting=false \
+	-Dtools=calibrator,debug,info,terminal,touch-calibrator
+
+# For weston 10, support for the deprecated wl_shell interface is now disabled by default
+# It will be removed in a future release, re-enable it with the Meson option
+#  -Ddeprecated-wl-shell=true
+# link: https://www.mail-archive.com/wayland-devel@lists.freedesktop.org/msg41415.html
+# Enable it for the VK-GL-CTS still use wl_shell API
+WESTON_CONF_OPTS += -Ddeprecated-wl-shell=true
 
 # Uses VIDIOC_EXPBUF, only available from 3.8+
 ifeq ($(BR2_TOOLCHAIN_HEADERS_AT_LEAST_3_8),y)
@@ -31,6 +40,20 @@ WESTON_CONF_OPTS += -Dlauncher-logind=true
 WESTON_DEPENDENCIES += dbus systemd
 else
 WESTON_CONF_OPTS += -Dlauncher-logind=false
+endif
+
+ifeq ($(BR2_PACKAGE_SEATD),y)
+WESTON_CONF_OPTS += -Dlauncher-libseat=true
+WESTON_DEPENDENCIES += seatd
+else
+WESTON_CONF_OPTS += -Dlauncher-libseat=false
+endif
+
+ifeq ($(BR2_PACKAGE_JPEG),y)
+WESTON_CONF_OPTS += -Dimage-jpeg=true
+WESTON_DEPENDENCIES += jpeg
+else
+WESTON_CONF_OPTS += -Dimage-jpeg=false
 endif
 
 ifeq ($(BR2_PACKAGE_WEBP),y)
@@ -48,10 +71,10 @@ endef
 define WESTON_USERS
 	- - weston-launch -1 - - - - Weston launcher group
 endef
-WESTON_CONF_OPTS += -Dweston-launch=true
+WESTON_CONF_OPTS += -Ddeprecated-weston-launch=true
 WESTON_DEPENDENCIES += linux-pam
 else
-WESTON_CONF_OPTS += -Dweston-launch=false
+WESTON_CONF_OPTS += -Ddeprecated-weston-launch=false
 endif
 
 ifeq ($(BR2_PACKAGE_HAS_LIBEGL_WAYLAND)$(BR2_PACKAGE_HAS_LIBGLES),yy)
@@ -76,16 +99,22 @@ else
 WESTON_CONF_OPTS += -Dbackend-rdp=false
 endif
 
-ifeq ($(BR2_PACKAGE_WESTON_FBDEV),y)
-WESTON_CONF_OPTS += -Dbackend-fbdev=true
-else
-WESTON_CONF_OPTS += -Dbackend-fbdev=false
-endif
-
 ifeq ($(BR2_PACKAGE_WESTON_DRM),y)
 WESTON_CONF_OPTS += -Dbackend-drm=true
 else
 WESTON_CONF_OPTS += -Dbackend-drm=false
+endif
+
+ifeq ($(BR2_PACKAGE_WESTON_HEADLESS),y)
+WESTON_CONF_OPTS += -Dbackend-headless=true
+else
+WESTON_CONF_OPTS += -Dbackend-headless=false
+endif
+
+ifeq ($(BR2_PACKAGE_WESTON_WAYLAND),y)
+WESTON_CONF_OPTS += -Dbackend-wayland=true
+else
+WESTON_CONF_OPTS += -Dbackend-wayland=false
 endif
 
 ifeq ($(BR2_PACKAGE_WESTON_X11),y)
