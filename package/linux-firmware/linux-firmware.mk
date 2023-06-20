@@ -4,7 +4,7 @@
 #
 ################################################################################
 
-LINUX_FIRMWARE_VERSION = 20210919
+LINUX_FIRMWARE_VERSION = 20230515
 LINUX_FIRMWARE_SOURCE = linux-firmware-$(LINUX_FIRMWARE_VERSION).tar.xz
 LINUX_FIRMWARE_SITE = $(BR2_KERNEL_MIRROR)/linux/kernel/firmware
 LINUX_FIRMWARE_INSTALL_IMAGES = YES
@@ -82,7 +82,8 @@ LINUX_FIRMWARE_FILES += \
 	rtl_bt/rtl8821c_config.bin rtl_bt/rtl8821c_fw.bin \
 	rtl_bt/rtl8822b_config.bin rtl_bt/rtl8822b_fw.bin \
 	rtl_bt/rtl8822cs_config.bin rtl_bt/rtl8822cs_fw.bin \
-	rtl_bt/rtl8822cu_config.bin rtl_bt/rtl8822cu_fw.bin
+	rtl_bt/rtl8822cu_config.bin rtl_bt/rtl8822cu_fw.bin \
+	rtl_bt/rtl8852bu_config.bin rtl_bt/rtl8852bu_fw.bin
 LINUX_FIRMWARE_ALL_LICENSE_FILES += LICENCE.rtlwifi_firmware.txt
 endif
 
@@ -502,7 +503,15 @@ LINUX_FIRMWARE_ALL_LICENSE_FILES += LICENCE.iwlwifi_firmware
 endif
 
 ifeq ($(BR2_PACKAGE_LINUX_FIRMWARE_IWLWIFI_AX210),y)
+ifeq ($(BR2_PACKAGE_HOST_LINUX_HEADERS_CUSTOM_5_15),y)
 LINUX_FIRMWARE_FILES += iwlwifi-ty-a0-gf-a0-59.ucode
+else ifeq ($(BR2_PACKAGE_HOST_LINUX_HEADERS_CUSTOM_5_10),y)
+LINUX_FIRMWARE_FILES += iwlwifi-ty-a0-gf-a0-59.ucode
+else
+LINUX_FIRMWARE_FILES += \
+	iwlwifi-ty-a0-gf-a0-72.ucode \
+	iwlwifi-ty-a0-gf-a0.pnvm
+endif
 LINUX_FIRMWARE_ALL_LICENSE_FILES += LICENCE.iwlwifi_firmware
 endif
 
