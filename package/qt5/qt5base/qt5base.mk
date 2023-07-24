@@ -232,8 +232,8 @@ QT5BASE_DEPENDENCIES   += $(if $(BR2_PACKAGE_QT5BASE_ICU),icu)
 QT5BASE_CONFIGURE_OPTS += $(if $(BR2_PACKAGE_QT5BASE_EXAMPLES),-make,-nomake) examples
 
 ifeq ($(BR2_PACKAGE_LIBINPUT),y)
-QT5BASE_CONFIGURE_OPTS += -libinput
-QT5BASE_DEPENDENCIES += libinput
+QT5BASE_CONFIGURE_OPTS += -libinput -xkbcommon
+QT5BASE_DEPENDENCIES += libinput libxkbcommon
 else
 QT5BASE_CONFIGURE_OPTS += -no-libinput
 endif
