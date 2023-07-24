@@ -1,0 +1,25 @@
+From e86ba68cddb9bcae8c63885af810d3563907d087 Mon Sep 17 00:00:00 2001
+From: Andy Hu <andy.hu@starfivetech.com>
+Date: Wed, 12 Jul 2023 19:39:13 +0800
+Subject: [PATCH] Fix the qt5webkit-example compile issue
+
+when compile qt5webkit-example had the below issue:
+work/buildroot_initramfs/host/riscv64-buildroot-linux-gnu/sysroot/usr/include/qt5/QtWebKit/QtWebKit:13:10: fatal error: util.h: No such file or directory
+---
+ include/QtWebKit/QtWebKit | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/include/QtWebKit/QtWebKit b/include/QtWebKit/QtWebKit
+index 8b162a5f..9bc17d32 100644
+--- a/include/QtWebKit/QtWebKit
++++ b/include/QtWebKit/QtWebKit
+@@ -10,6 +10,5 @@
+ #include "qwebpluginfactory.h"
+ #include "qwebsecurityorigin.h"
+ #include "qwebsettings.h"
+-#include "util.h"
+ #include "qtwebkitversion.h"
+ #endif
+-- 
+2.41.0
+
