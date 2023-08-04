@@ -1,0 +1,6 @@
+comment "qt test package"
+
+config BR2_PACKAGE_QT_TEST
+	bool "qt_test"
+	help
+	  Utility for testing qt project
