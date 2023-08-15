@@ -25,7 +25,7 @@ case "$1" in
         start-stop-daemon -K -x $NAME
         echo 0 > /sys/class/gpio/gpio52/value
         echo 52 > /sys/class/gpio/unexport
-
+	killall brcm_patchram_plus
         echo "OK"
         ;;
   restart|force-reload)
