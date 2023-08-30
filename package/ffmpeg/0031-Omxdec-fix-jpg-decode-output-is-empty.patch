@@ -1,0 +1,159 @@
+From 38c34580eb49891a440babb80b2cb1cf811d936e Mon Sep 17 00:00:00 2001
+From: Som Qin <som.qin@starfivetech.com>
+Date: Tue, 29 Aug 2023 21:21:32 +0800
+Subject: [PATCH 2/2] Omxdec: fix jpg decode output is empty
+
+Signed-off-by: Som Qin <som.qin@starfivetech.com>
+---
+ libavcodec/omxdec.c | 71 ++++++++++++++++++++++++++++++---------------
+ 1 file changed, 48 insertions(+), 23 deletions(-)
+
+diff --git a/libavcodec/omxdec.c b/libavcodec/omxdec.c
+index 18bd954..6cb0d98 100755
+--- a/libavcodec/omxdec.c
++++ b/libavcodec/omxdec.c
+@@ -391,31 +391,55 @@ static void append_buffer(pthread_mutex_t *mutex, pthread_cond_t *cond,
+     pthread_mutex_unlock(mutex);
+ }
+ 
+-static OMX_BUFFERHEADERTYPE *get_buffer(pthread_mutex_t *mutex, pthread_cond_t *cond,
+-                                        int* array_size, OMX_BUFFERHEADERTYPE **array,
+-                                        int wait_sec)
++static OMX_BUFFERHEADERTYPE *get_input_buffer(OMXCodecContext *s, int wait_sec)
+ {
+     struct timespec abstime;
+     OMX_BUFFERHEADERTYPE *buffer;
+-    pthread_mutex_lock(mutex);
+-    if (wait_sec > 0 && !*array_size) {
++    pthread_mutex_lock(&s->input_mutex);
++    if (wait_sec > 0 && !s->num_free_in_buffers) {
+         clock_gettime(CLOCK_REALTIME, &abstime);
+         abstime.tv_sec += wait_sec;
+-        pthread_cond_timedwait(cond, mutex, &abstime);
++        pthread_cond_timedwait(&s->input_cond, &s->input_mutex, &abstime);
+     } else if (wait_sec < 0) {
+-        while (!*array_size)
++        while (!s->num_free_in_buffers)
+         {
+-           pthread_cond_wait(cond, mutex);
++           pthread_cond_wait(&s->input_cond, &s->input_mutex);
+         }
+     }
+-    if (*array_size > 0) {
+-        buffer = array[0];
+-        (*array_size)--;
+-        memmove(&array[0], &array[1], (*array_size) * sizeof(OMX_BUFFERHEADERTYPE*));
++    if (s->num_free_in_buffers > 0) {
++        buffer = s->free_in_buffers[0];
++        (s->num_free_in_buffers)--;
++        memmove(&s->free_in_buffers[0], &s->free_in_buffers[1], s->num_free_in_buffers * sizeof(OMX_BUFFERHEADERTYPE*));
+     } else {
+         buffer = NULL;
+     }
+-    pthread_mutex_unlock(mutex);
++    pthread_mutex_unlock(&s->input_mutex);
++    return buffer;
++}
++
++static OMX_BUFFERHEADERTYPE *get_output_buffer(OMXCodecContext *s, int wait_sec)
++{
++    struct timespec abstime;
++    OMX_BUFFERHEADERTYPE *buffer;
++    pthread_mutex_lock(&s->output_mutex);
++    if (wait_sec > 0 && !s->num_done_out_buffers) {
++        clock_gettime(CLOCK_REALTIME, &abstime);
++        abstime.tv_sec += wait_sec;
++        pthread_cond_timedwait(&s->output_cond, &s->output_mutex, &abstime);
++    } else if (wait_sec < 0) {
++        while (!s->num_done_out_buffers)
++        {
++           pthread_cond_wait(&s->output_cond, &s->output_mutex);
++        }
++    }
++    if (s->num_done_out_buffers > 0) {
++        buffer = s->done_out_buffers[0];
++        (s->num_done_out_buffers)--;
++        memmove(&s->done_out_buffers[0], &s->done_out_buffers[1], s->num_done_out_buffers * sizeof(OMX_BUFFERHEADERTYPE*));
++    } else {
++        buffer = NULL;
++    }
++    pthread_mutex_unlock(&s->output_mutex);
+     return buffer;
+ }
+ 
+@@ -488,12 +512,15 @@ static OMX_ERRORTYPE event_handler(OMX_HANDLETYPE component, OMX_PTR app_data, O
+ 
+                 av_log(s->avctx, AV_LOG_VERBOSE, "w:%d, h:%d, fmt:%d\n", s->dec_out_width, s->dec_out_height, s->dec_pix_fmt); 
+                 if (!s->num_out_buffers) {
++                    pthread_mutex_lock(&s->output_mutex);
+                     s->num_out_buffers = out_port_params.nBufferCountActual;
+                     s->out_buffer_headers = av_mallocz(sizeof(OMX_BUFFERHEADERTYPE*) * s->num_out_buffers);
+                     s->done_out_buffers   = av_mallocz(sizeof(OMX_BUFFERHEADERTYPE*) * s->num_out_buffers);
+ 
+-                    if (!s->out_buffer_headers || !s->done_out_buffers)
++                    if (!s->out_buffer_headers || !s->done_out_buffers) {
++                        pthread_mutex_unlock(&s->output_mutex);
+                         return AVERROR(ENOMEM);
++                    }
+ 
+                     OMX_SendCommand(s->handle, OMX_CommandPortEnable, 1, NULL);
+ 
+@@ -502,6 +529,7 @@ static OMX_ERRORTYPE event_handler(OMX_HANDLETYPE component, OMX_PTR app_data, O
+ 
+                     if (err != OMX_ErrorNone) {
+                         av_log(s->avctx, AV_LOG_ERROR,  "err %x (%d) on line %d\n", err, err, __LINE__);
++                        pthread_mutex_unlock(&s->output_mutex);
+                         return AVERROR_UNKNOWN;
+                     }
+                     s->num_out_buffers = num;
+@@ -512,6 +540,7 @@ static OMX_ERRORTYPE event_handler(OMX_HANDLETYPE component, OMX_PTR app_data, O
+                         for (; num < s->num_out_buffers; num++)
+                             s->done_out_buffers[s->num_done_out_buffers++] = s->out_buffer_headers[num];
+                     }
++                    pthread_mutex_unlock(&s->output_mutex);
+                 }
+             } 
+         }
+@@ -966,15 +995,13 @@ static av_cold void cleanup(OMXCodecContext *s)
+         wait_for_state(s, OMX_StateIdle);
+         OMX_SendCommand(s->handle, OMX_CommandStateSet, OMX_StateLoaded, NULL);
+         for (i = 0; i < s->num_in_buffers; i++) {
+-            buffer = get_buffer(&s->input_mutex, &s->input_cond,
+-                                                      &s->num_free_in_buffers, s->free_in_buffers, -1);
++            buffer = get_input_buffer(s, -1);
+             if (s->input_zerocopy)
+                 buffer->pBuffer = NULL;
+             OMX_FreeBuffer(s->handle, s->in_port, buffer);
+         }
+ 
+-        while (buffer = get_buffer(&s->output_mutex, &s->output_cond,
+-                    &s->num_done_out_buffers, s->done_out_buffers, 0)) {
++        while (buffer = get_output_buffer(s, 0)) {
+             OMX_FreeBuffer(s->handle, s->out_port, buffer);
+             s->num_out_buffers--;
+         }
+@@ -1236,8 +1263,7 @@ static int omx_decode_frame(AVCodecContext *avctx, void *data,
+         //VPU init and fill buffer slow, so empty buf sleep to send before get vpu fill buf.
+         // if(!s->first_get_outbuffer)
+         // av_usleep(100000);
+-        buffer = get_buffer(&s->input_mutex, &s->input_cond,
+-                            &s->num_free_in_buffers, s->free_in_buffers, 10);
++        buffer = get_input_buffer(s, 10);
+ 
+         if (!buffer) {
+             av_log(avctx, AV_LOG_ERROR, "get_buffer NULL\n");
+@@ -1289,9 +1315,8 @@ static int omx_decode_frame(AVCodecContext *avctx, void *data,
+         // If not flushing, just poll the queue if there's finished packets.
+         // If flushing, do a blocking wait until we either get a completed
+         // packet, or get EOS.
+-        buffer = get_buffer(&s->output_mutex, &s->output_cond,
+-                            &s->num_done_out_buffers, s->done_out_buffers,
+-                            0);
++        int wait_sec = ((avctx->codec->id == AV_CODEC_ID_MJPEG) && (!s->decode_flag))? 2 : 0;
++        buffer = get_output_buffer(s, wait_sec);
+ 
+         if (!buffer) {
+             break;
+-- 
+2.25.1
+
