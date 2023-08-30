@@ -1,0 +1,56 @@
+Weston calibrate coordinate for touch event.
+
+Signed-off-by: Leo Lu <leo.lu@starfivetech.com>
+
+--- a/libweston/libinput-device.c	2023-08-29 09:50:15.351292430 +0800
++++ b/libweston/libinput-device.c	2023-08-29 16:50:45.075771603 +0800
+@@ -445,25 +445,32 @@ handle_touch_with_coords(struct libinput
+ 	double x;
+ 	double y;
+ 	struct weston_point2d_device_normalized norm;
+-	uint32_t width, height;
+ 	struct timespec time;
+ 	int32_t slot;
++	struct weston_output *primary = NULL;
+ 
+ 	if (!device->output)
+ 		return;
+-
++	
++	primary = wl_container_of(device->output->compositor->output_list.next,
++								primary,link);
++	if (!primary)
++		return;
++	
+ 	timespec_from_usec(&time,
+ 			   libinput_event_touch_get_time_usec(touch_event));
+ 	slot = libinput_event_touch_get_seat_slot(touch_event);
+ 
+-	width = device->output->current_mode->width;
+-	height = device->output->current_mode->height;
+-	x =  libinput_event_touch_get_x_transformed(touch_event, width);
+-	y =  libinput_event_touch_get_y_transformed(touch_event, height);
++	x = libinput_event_touch_get_x(touch_event);
++	y = libinput_event_touch_get_y(touch_event);
+ 
+-	weston_output_transform_coordinate(device->output,
+-					   x, y, &x, &y);
++	if (!strncmp(primary->name, "HDMI", strlen("HDMI")))
++		 x += primary->width;
++	
+ 
++	weston_output_transform_coordinate(primary,
++					   x, y, &x, &y);
++	
+ 	if (weston_touch_device_can_calibrate(device->touch_device)) {
+ 		norm.x = libinput_event_touch_get_x_transformed(touch_event, 1);
+ 		norm.y = libinput_event_touch_get_y_transformed(touch_event, 1);
+@@ -472,6 +479,8 @@ handle_touch_with_coords(struct libinput
+ 	} else {
+ 		notify_touch(device->touch_device, &time, slot, x, y, touch_type);
+ 	}
++
++
+ }
+ 
+ static void
