@@ -1,0 +1,50 @@
+gstv4l2object: support vuya format.
+
+Signed-off-by: Leo Lu <leo.lu@starfivetech.com>
+
+--- a/sys/v4l2/gstv4l2object.c	2023-09-15 10:15:34.993461329 +0800
++++ b/sys/v4l2/gstv4l2object.c	2023-09-15 10:28:37.856154015 +0800
+@@ -146,6 +146,7 @@ static const GstV4L2FormatDesc gst_v4l2_
+   {V4L2_PIX_FMT_HI240, TRUE, GST_V4L2_RAW},
+   {V4L2_PIX_FMT_HM12, TRUE, GST_V4L2_RAW},
+   {V4L2_PIX_FMT_M420, TRUE, GST_V4L2_RAW},
++  {V4L2_PIX_FMT_VUYA32,TRUE,GST_V4L2_RAW},
+ 
+   /* two planes -- one Y, one Cr + Cb interleaved  */
+   {V4L2_PIX_FMT_NV12, TRUE, GST_V4L2_RAW},
+@@ -1069,6 +1070,7 @@ gst_v4l2_object_format_get_rank (const s
+     case V4L2_PIX_FMT_NV61:    /* 16  Y/CrCb 4:2:2  */
+     case V4L2_PIX_FMT_NV61M:   /* Same as NV61      */
+     case V4L2_PIX_FMT_NV24:    /* 24  Y/CrCb 4:4:4  */
++    case V4L2_PIX_FMT_VUYA32:
+       rank = YUV_ODD_BASE_RANK;
+       break;
+ 
+@@ -1384,6 +1386,9 @@ gst_v4l2_object_v4l2fourcc_to_video_form
+     case V4L2_PIX_FMT_NV24:
+       format = GST_VIDEO_FORMAT_NV24;
+       break;
++    case V4L2_PIX_FMT_VUYA32:
++      format = GST_VIDEO_FORMAT_VUYA;
++      break;    
+     default:
+       format = GST_VIDEO_FORMAT_UNKNOWN;
+       break;
+@@ -1525,6 +1530,7 @@ gst_v4l2_object_v4l2fourcc_to_bare_struc
+     case V4L2_PIX_FMT_UYVY:
+     case V4L2_PIX_FMT_YUV422P:
+     case V4L2_PIX_FMT_YVYU:
++    case V4L2_PIX_FMT_VUYA32:
+     case V4L2_PIX_FMT_YUV411P:{
+       GstVideoFormat format;
+       format = gst_v4l2_object_v4l2fourcc_to_video_format (fourcc);
+@@ -1861,6 +1867,9 @@ gst_v4l2_object_get_caps_info (GstV4l2Ob
+         fourcc = V4L2_PIX_FMT_RGB555X;
+         fourcc_nc = V4L2_PIX_FMT_XRGB555X;
+         break;
++      case GST_VIDEO_FORMAT_VUYA:
++        fourcc = V4L2_PIX_FMT_VUYA32;
++        break;
+       default:
+         break;
+     }
