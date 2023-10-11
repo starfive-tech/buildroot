@@ -61,6 +61,7 @@ typedef struct {
     enum STF_DISP_TYPE disp_type;
     enum IOMethod    io_mthd;
     int continuous;
+    uint32_t frm_num;
 
     uint8_t jpegQuality;
     char* jpegFilename;
@@ -84,6 +85,7 @@ static void alloc_default_config(ConfigParam_t **pp_data)
 
     cfg_param->disp_type = STF_DISP_NONE;
     cfg_param->continuous = 0;
+    cfg_param->frm_num = 3;
     cfg_param->jpegQuality = 70;
     cfg_param->io_mthd = IO_METHOD_MMAP;
 
@@ -514,12 +516,10 @@ static int frameRead(void)
 static void mainloop_select(void)
 {
     int count, i;
-    uint32_t numberOfTimeouts;
 
-    numberOfTimeouts = 0;
-    count = 3;
+    count = gp_cfg_param->frm_num;
 
-    while (count-- > 0) {
+    while (count > 0) {
         for (i = 0; i < 1; i++) {
             fd_set fds;
             struct timeval tv;
@@ -538,20 +538,18 @@ static void mainloop_select(void)
                 }
                 errno_exit("select");
             } else if (0 == r) {
-                if (numberOfTimeouts <= 0) {
-                    // count++;
-                } else {
-                    LOG(STF_LEVEL_ERR, "select timeout\n");
-                    exit(EXIT_FAILURE);
-                }
+                LOG(STF_LEVEL_ERR, "select timeout\n");
+                continue;
             }
+
+            if (frameRead()) {
+                break;
+            }
+            count--;
+
             if (gp_cfg_param->continuous == 1) {
                 count = 3;
             }
-
-            if (frameRead())
-                break;
-
             /* EAGAIN - continue select loop. */
         }
     }
@@ -599,7 +597,7 @@ static void mainloop()
 {
     struct v4l2_buffer buf;
     int r;
-    int count = 3;
+    int count = gp_cfg_param->frm_num;
     drmEventContext ev;
     struct pollfd* fds = NULL;
     uint32_t nfds = 0;
@@ -661,7 +659,7 @@ static void mainloop()
         }
     }
 
-    while (count-- > 0) {
+    while (count > 0) {
         r = poll(fds, nfds, 3000);
         if (-1 == r) {
             if (EINTR == errno) {
@@ -681,6 +679,7 @@ static void mainloop()
             if (fds[0].revents & POLLIN) {
                 frameRead();
                 calc_frame_fps();
+                count--;
             }
         } else if (STF_DISP_DRM == gp_cfg_param->disp_type &&
                    IO_METHOD_MMAP == gp_cfg_param->io_mthd) {
@@ -688,6 +687,7 @@ static void mainloop()
             if (fds[0].revents & POLLIN) {
                 frameRead();
                 calc_frame_fps();
+                count--;
             }
 
             if (fds[1].revents & POLLIN) {
@@ -719,6 +719,7 @@ static void mainloop()
                     }
                     frameRead(); // TODO: add support for save file later
                     calc_frame_fps();
+                    count--;
                 }
             }
             if (fds[1].revents & POLLIN) {
@@ -772,6 +773,7 @@ static void usage(FILE* fp, int argc, char** argv)
         "-D | --down          Set v4l2 image crop y height\n"
         "-I | --interval      Set frame interval (fps) (-1 to skip)\n"
         "-c | --continuous    Do continous capture, stop with SIGINT.\n"
+        "-n | --frame_num     capure frame number, default 30\n"
         "-C | --connector     Display Connector.\n"
         "                0: INNO HDMI\n"
         "                1: MIPI/RGB HDMI\n"
@@ -808,7 +810,7 @@ static void usage(FILE* fp, int argc, char** argv)
         argv[0]);
 }
 
-static const char short_options [] = "d:ho:q:m:W:H:I:vcf:t:X:Y:R:D:l:C:s";
+static const char short_options [] = "d:ho:q:m:W:H:I:vcn:f:t:X:Y:R:D:l:C:s";
 
 static const struct option long_options [] = {
     { "device",     required_argument,      NULL,           'd' },
@@ -825,6 +827,7 @@ static const struct option long_options [] = {
     { "interval",   required_argument,      NULL,           'I' },
     { "version",    no_argument,            NULL,           'v' },
     { "continuous", no_argument,            NULL,           'c' },
+    { "frame_num",  required_argument,      NULL,           'n' },
     { "format",     required_argument,      NULL,           'f' },
     { "distype",    required_argument,      NULL,           't' },
     { "loadfw",     required_argument,      NULL,           'l' },
@@ -916,6 +919,11 @@ void parse_options(int argc, char **argv, ConfigParam_t *cfg_param)
             // set flag for continuous capture, interuptible by sigint
             cfg_param->continuous = 1;
             InstallSIGINTHandler();
+            break;
+
+        case 'n':
+            // set capture frame number. effective when cfg_param->continuous is 0
+            cfg_param->frm_num = (uint32_t)strtoul(optarg, NULL, 0);
             break;
 
         case 'v':
