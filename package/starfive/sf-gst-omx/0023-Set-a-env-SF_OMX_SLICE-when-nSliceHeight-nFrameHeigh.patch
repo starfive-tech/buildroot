@@ -1,0 +1,71 @@
+From 6b7d167c0ef5d376064a18c76e1a408158c85971 Mon Sep 17 00:00:00 2001
+From: Som Qin <som.qin@starfivetech.com>
+Date: Wed, 18 Oct 2023 09:25:41 +0800
+Subject: [PATCH] Set a env "SF_OMX_SLICE" when nSliceHeight > nFrameHeight in
+ dec output port.
+
+Env variables are set to bypass the negotiation mechanism to direct display
+with drm(kmssink).
+
+Signed-off-by: Som Qin <som.qin@starfivetech.com>
+---
+ omx/gstomxvideodec.c | 22 +++++++++++++++++++++-
+ 1 file changed, 21 insertions(+), 1 deletion(-)
+
+diff --git a/omx/gstomxvideodec.c b/omx/gstomxvideodec.c
+index 6224e09..57e5b5c 100644
+--- a/omx/gstomxvideodec.c
++++ b/omx/gstomxvideodec.c
+@@ -1054,6 +1054,8 @@ gst_omx_video_dec_allocate_output_buffers (GstOMXVideoDec * self)
+       GList *images = NULL;
+       GList *frames = NULL;
+       GstVideoInfo v_info;
++      OMX_PARAM_PORTDEFINITIONTYPE port_def;
++      guint frame_height, frame_slice;
+       gint i;
+ 
+       if (!gst_video_info_from_caps (&v_info, caps)) {
+@@ -1063,6 +1065,15 @@ gst_omx_video_dec_allocate_output_buffers (GstOMXVideoDec * self)
+         self->use_buffers = FALSE;
+       }
+ 
++      gst_omx_port_get_port_definition (self->dec_out_port, &port_def);
++      frame_slice = port_def.format.video.nSliceHeight;
++      frame_height = port_def.format.video.nFrameHeight;
++      if (frame_slice && (frame_slice > frame_height)) {
++        v_info.size = v_info.size / frame_height * frame_slice;
++        for (i = 0; i < GST_VIDEO_MAX_PLANES; i++)
++          v_info.offset[i] = v_info.offset[i] / frame_height * frame_slice;
++      }
++
+       GST_DEBUG_OBJECT (self, "Trying to use %d buffers", min);
+ 
+       for (i = 0; i < min && self->use_buffers; i++) {
+@@ -1345,7 +1356,7 @@ gst_omx_video_dec_reconfigure_output_port (GstOMXVideoDec * self)
+   OMX_PARAM_PORTDEFINITIONTYPE port_def;
+   GstVideoFormat format;
+   GstVideoInterlaceMode interlace_mode;
+-  guint frame_height;
++  guint frame_height, frame_slice;
+ 
+   /* At this point the decoder output port is disabled */
+   interlace_mode = gst_omx_video_dec_get_output_interlace_info (self);
+@@ -1589,6 +1600,15 @@ gst_omx_video_dec_reconfigure_output_port (GstOMXVideoDec * self)
+     interlace_mode = GST_VIDEO_INTERLACE_MODE_ALTERNATE;
+   }
+ 
++  frame_slice = port_def.format.video.nSliceHeight;
++  if (frame_slice && (frame_slice > frame_height)) {
++    char string[32];
++    sprintf(string, "%d", frame_slice);
++    setenv ("SF_OMX_SLICE",  string, 1);
++  } else {
++    unsetenv ("SF_OMX_SLICE");
++  }
++
+   GST_DEBUG_OBJECT (self,
+       "Setting output state: format %s (%d), width %u, height %u",
+       gst_video_format_to_string (format),
+-- 
+2.25.1
+
