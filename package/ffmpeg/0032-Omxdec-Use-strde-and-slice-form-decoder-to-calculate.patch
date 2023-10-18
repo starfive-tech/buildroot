@@ -1,0 +1,36 @@
+From d077e89380593feafd82e96a293b26fb2d02aba2 Mon Sep 17 00:00:00 2001
+From: Som Qin <som.qin@starfivetech.com>
+Date: Thu, 21 Sep 2023 16:06:09 +0800
+Subject: [PATCH] Omxdec: Use strde and slice form decoder to calculate avframe
+ buffer linesize
+
+Signed-off-by: Som Qin <som.qin@starfivetech.com>
+---
+ libavcodec/omxdec.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/libavcodec/omxdec.c b/libavcodec/omxdec.c
+index 6cb0d98..0edca36 100755
+--- a/libavcodec/omxdec.c
++++ b/libavcodec/omxdec.c
+@@ -509,6 +509,8 @@ static OMX_ERRORTYPE event_handler(OMX_HANDLETYPE component, OMX_PTR app_data, O
+                 s->dec_out_width = out_port_params.format.video.nFrameWidth;
+                 s->dec_out_height = out_port_params.format.video.nFrameHeight;
+                 s->dec_pix_fmt = out_port_params.format.video.eColorFormat;
++                s->stride     = out_port_params.format.video.nStride;
++                s->plane_size = out_port_params.format.video.nSliceHeight;
+ 
+                 av_log(s->avctx, AV_LOG_VERBOSE, "w:%d, h:%d, fmt:%d\n", s->dec_out_width, s->dec_out_height, s->dec_pix_fmt); 
+                 if (!s->num_out_buffers) {
+@@ -1339,8 +1341,6 @@ static int omx_decode_frame(AVCodecContext *avctx, void *data,
+         avctx->width = s->dec_out_width;
+         avctx->height = s->dec_out_height;
+         avctx->pix_fmt = omx_map_color_format(avctx, s->dec_pix_fmt);
+-        s->stride     = avctx->width;
+-        s->plane_size = avctx->height;
+         
+         if (buffer->nFlags & OMX_BUFFERFLAG_EOS)
+             s->got_eos = 1;
+-- 
+2.25.1
+
