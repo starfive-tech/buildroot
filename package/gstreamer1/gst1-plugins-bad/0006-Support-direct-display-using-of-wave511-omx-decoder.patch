@@ -1,0 +1,60 @@
+From 23c80a346def541e7a750efa22be1da64777067e Mon Sep 17 00:00:00 2001
+From: Som Qin <som.qin@starfivetech.com>
+Date: Wed, 18 Oct 2023 09:55:16 +0800
+Subject: [PATCH] Support direct display using of wave511 omx decoder
+
+Gets environment variables "SF_OMX_SLICE"  to support special cases
+
+Signed-off-by: Som Qin <som.qin@starfivetech.com>
+---
+ sys/kms/gstkmsallocator.c | 27 ++++++++++++++++++++++++++-
+ 1 file changed, 26 insertions(+), 1 deletion(-)
+
+diff --git a/sys/kms/gstkmsallocator.c b/sys/kms/gstkmsallocator.c
+index cb2f6bd..493cd92 100644
+--- a/sys/kms/gstkmsallocator.c
++++ b/sys/kms/gstkmsallocator.c
+@@ -189,7 +189,18 @@ gst_kms_allocator_memory_create (GstKMSAllocator * allocator,
+   fmt = gst_drm_format_from_video (GST_VIDEO_INFO_FORMAT (vinfo));
+   arg.bpp = gst_drm_bpp_from_drm (fmt);
+   arg.width = GST_VIDEO_INFO_WIDTH (vinfo);
+-  h = GST_VIDEO_INFO_HEIGHT (vinfo);
++  char* env = NULL;
++  env = getenv("SF_OMX_SLICE");
++  if (env) {
++    gint slice, i;
++    slice = atoi(env);
++    if (slice > 0 && slice > vinfo->height) {
++      h = slice;
++    } else {
++      h = GST_VIDEO_INFO_HEIGHT (vinfo);
++    }
++  } else
++    h = GST_VIDEO_INFO_HEIGHT (vinfo);
+   arg.height = gst_drm_height_from_drm (fmt, h);
+ 
+   ret = drmIoctl (allocator->priv->fd, DRM_IOCTL_MODE_CREATE_DUMB, &arg);
+@@ -498,6 +509,20 @@ gst_kms_allocator_bo_alloc (GstAllocator * allocator, GstVideoInfo * vinfo)
+ 
+   mem = GST_MEMORY_CAST (kmsmem);
+ 
++  char* env = NULL;
++  env = getenv("SF_OMX_SLICE");
++  if (env) {
++    gint slice, i;
++    slice = atoi(env);
++    if (slice > 0 && slice > vinfo->height) {
++	  GST_DEBUG_OBJECT (alloc, "slice %d is large than height %d, recalculate size/offset",
++	    slice, vinfo->height );
++      vinfo->size = vinfo->size / vinfo->height * slice;
++      for (i = 0; i < GST_VIDEO_MAX_PLANES; i++)
++        vinfo->offset[i] = vinfo->offset[i] / vinfo->height * slice;
++    }
++  }
++
+   if (!gst_kms_allocator_memory_create (alloc, kmsmem, vinfo)) {
+     g_slice_free (GstKMSMemory, kmsmem);
+     return NULL;
+-- 
+2.25.1
+
