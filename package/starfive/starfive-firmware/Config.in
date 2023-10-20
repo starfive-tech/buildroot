@@ -36,6 +36,11 @@ config BR2_PACKAGE_STARFIVE_FIRMWARE_ECR6600U_USB_WIFI
 	help
 	  Firmware files for the ECR6600U USB Wifi module.
 
+config BR2_PACKAGE_STARFIVE_FIRMWARE_AIC8800_USB_WIFI
+	bool "AIC8800 and AIC8800DC USB Wifi"
+	help
+	  Firmware files for the AIC8800 and AIC8800DC USB Wifi module.
+
 endmenu # WiFi
 
 endif # BR2_PACKAGE_STARFIVE_FIRMWARE
