@@ -4,10 +4,10 @@
 #
 ################################################################################
 
-LIBCAMERA_VERSION = a6d3448869e2b70752ffd3aef3bb164ab4034597
-LIBCAMERA_SITE = $(call github,starfive-tech,libcamera,$(LIBCAMERA_VERSION))
-
+LIBCAMERA_VERSION = a10863152a7ca4b98304e345db3c9f9e0034d8f9
+LIBCAMERA_SITE = https://github.com/starfive-tech/libcamera
 LIBCAMERA_SITE_METHOD = git
+
 LIBCAMERA_DEPENDENCIES = \
 	host-openssl \
 	host-pkgconf \
