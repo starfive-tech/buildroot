@@ -4,17 +4,18 @@
 #
 ################################################################################
 
-LIBCAMERA_SITE = https://git.linuxtv.org/libcamera.git
-# LIBCAMERA_VERSION = e59713c68678f3eb6b6ebe97cabdc88c7042567f
-# LIBCAMERA_VERSION = 06e53199c2563105030bda4c72752b853da7edc8
-LIBCAMERA_VERSION = d6f4abeead1e86d89dc376e8a303849bdb98d5fd
+LIBCAMERA_VERSION = a10863152a7ca4b98304e345db3c9f9e0034d8f9
+LIBCAMERA_SITE = https://github.com/starfive-tech/libcamera
 LIBCAMERA_SITE_METHOD = git
+
 LIBCAMERA_DEPENDENCIES = \
 	host-openssl \
 	host-pkgconf \
 	host-python3-pyyaml \
 	host-python-jinja2 \
 	host-python-ply \
+	host-patchelf \
+	libyaml \
 	gnutls
 LIBCAMERA_CONF_OPTS = \
 	-Dandroid=disabled \
@@ -64,6 +65,13 @@ LIBCAMERA_PIPELINES-$(BR2_PACKAGE_LIBCAMERA_PIPELINE_STARFIVE) += starfive
 
 LIBCAMERA_CONF_OPTS += -Dpipelines=$(subst $(space),$(comma),$(LIBCAMERA_PIPELINES-y))
 
+ifeq ($(BR2_PACKAGE_LIBCAMERA_COMPLIANCE),y)
+LIBCAMERA_DEPENDENCIES += gtest libevent
+LIBCAMERA_CONF_OPTS += -Dlc-compliance=enabled
+else
+LIBCAMERA_CONF_OPTS += -Dlc-compliance=disabled
+endif
+
 # gstreamer-video-1.0, gstreamer-allocators-1.0
 ifeq ($(BR2_PACKAGE_GSTREAMER1)$(BR2_PACKAGE_GST1_PLUGINS_BASE),yy)
 LIBCAMERA_CONF_OPTS += -Dgstreamer=enabled
@@ -80,6 +88,13 @@ else
 LIBCAMERA_CONF_OPTS += -Dqcam=disabled
 endif
 
+ifeq ($(BR2_PACKAGE_LIBEVENT),y)
+LIBCAMERA_CONF_OPTS += -Dcam=enabled
+LIBCAMERA_DEPENDENCIES += libevent
+else
+LIBCAMERA_CONF_OPTS += -Dcam=disabled
+endif
+
 ifeq ($(BR2_PACKAGE_TIFF),y)
 LIBCAMERA_DEPENDENCIES += tiff
 endif
@@ -88,18 +103,71 @@ ifeq ($(BR2_PACKAGE_HAS_UDEV),y)
 LIBCAMERA_DEPENDENCIES += udev
 endif
 
-ifeq ($(BR2_PACKAGE_LIBEVENT),y)
-LIBCAMERA_DEPENDENCIES += libevent
+ifeq ($(BR2_PACKAGE_LTTNG_LIBUST),y)
+LIBCAMERA_CONF_OPTS += -Dtracing=enabled
+LIBCAMERA_DEPENDENCIES += lttng-libust
+else
+LIBCAMERA_CONF_OPTS += -Dtracing=disabled
+endif
+
+ifeq ($(BR2_PACKAGE_LIBEXECINFO),y)
+LIBCAMERA_DEPENDENCIES += libexecinfo
+LIBCAMERA_LDFLAGS = $(TARGET_LDFLAGS) -lexecinfo
 endif
 
 ifeq ($(BR2_PACKAGE_LIBCAMERA_PIPELINE_STARFIVE),y)
 LIBCAMERA_DEPENDENCIES += yaml-cpp
 endif
 
-define LIBCAMERA_HOOK_EXTRA
-	mkdir -p $(TARGET_DIR)/etc/starfive
-	$(INSTALL) -D -m 0644 $(@D)/src/libcamera/pipeline/starfive/sensors_pipeline.yaml $(TARGET_DIR)/etc/starfive/sensors_pipeline.yaml
+# Open-Source IPA shlibs need to be signed in order to be runnable within the
+# same process, otherwise they are deemed Closed-Source and run in another
+# process and communicate over IPC.
+# Buildroot sanitizes RPATH in a post build process. meson gets rid of rpath
+# while installing so we don't need to do it manually here.
+# Buildroot may strip symbols, so we need to do the same before signing
+# otherwise the signature won't match the shlib on the rootfs. Since meson
+# install target is signing the shlibs, we need to strip them before.
+LIBCAMERA_STRIP_FIND_CMD = \
+	find $(@D)/build/src/ipa \
+	$(if $(call qstrip,$(BR2_STRIP_EXCLUDE_FILES)), \
+		-not \( $(call findfileclauses,$(call qstrip,$(BR2_STRIP_EXCLUDE_FILES))) \) ) \
+	-type f -name 'ipa_*.so' -print0
+
+define LIBCAMERA_BUILD_STRIP_IPA_SO
+	$(LIBCAMERA_STRIP_FIND_CMD) | xargs --no-run-if-empty -0 $(STRIPCMD)
 endef
-LIBCAMERA_POST_INSTALL_TARGET_HOOKS = LIBCAMERA_HOOK_EXTRA
+
+# LIBCAMERA_POST_BUILD_HOOKS += LIBCAMERA_BUILD_STRIP_IPA_SO
+
+## replace with the starfive full feature ipa library which is closed source when post build
+define LIBCAMERA_BUILD_REPLACE_STARFIVE_IPA
+	@echo "LIBCAMERA_POST_BUILD_HOOKS !!!!"
+	$(if $(wildcard $(@D)/starfive_post_script/replace_and_sign_ipa_starfive_lib.sh),
+		$(@D)/starfive_post_script/replace_and_sign_ipa_starfive_lib.sh)
+endef
+LIBCAMERA_POST_BUILD_HOOKS += LIBCAMERA_BUILD_REPLACE_STARFIVE_IPA
+
+
+## replace with the starfive full feature ipa library which is closed source when post install to stage
+define LIBCAMERA_INSTALL_STAGING_REPLACE_STARFIVE_IPA
+	@echo "LIBCAMERA_POST_INSTALL_STAGING_HOOKS !!!!"
+	$(if $(wildcard $(@D)/starfive_post_script/replace_and_sign_ipa_starfive_lib.sh),
+		$(@D)/starfive_post_script/replace_and_sign_ipa_starfive_lib.sh $(STAGING_DIR)/usr/lib/libcamera)
+endef
+LIBCAMERA_POST_INSTALL_STAGING_HOOKS += LIBCAMERA_INSTALL_STAGING_REPLACE_STARFIVE_IPA
+
+## replace with the starfive full feature ipa library which is closed source when post install to target
+## consider the support/scripts/fix-rpath will always change the rpath in library when make rootfs, so try to run it before sign
+define LIBCAMERA_TARGET_INSTALL_REPLACE_STARFIVE_IPA
+	@echo "LIBCAMERA_POST_INSTALL_TARGET_HOOKS !!!!"
+	$(if $(wildcard $(@D)/starfive_post_script/replace_and_sign_ipa_starfive_lib.sh),
+		$(@D)/starfive_post_script/replace_and_sign_ipa_starfive_lib.sh $(TARGET_DIR)/usr/lib/libcamera; \
+		$(@D)/starfive_post_script/replace_and_sign_ipa_starfive_lib.sh)
+	PER_PACKAGE_DIR=$(PER_PACKAGE_DIR) $(TOPDIR)/support/scripts/fix-rpath target
+	$(@D)/src/ipa/ipa-sign-install.sh $(@D)/build/src/ipa-priv-key.pem $(TARGET_DIR)/usr/lib/libcamera/ipa_starfive.so
+	@echo "$(@D)/src/ipa/ipa-sign-install.sh $(@D)/build/src/ipa-priv-key.pem $(TARGET_DIR)/usr/lib/libcamera/ipa_starfive.so"
+
+endef
+LIBCAMERA_POST_INSTALL_TARGET_HOOKS += LIBCAMERA_TARGET_INSTALL_REPLACE_STARFIVE_IPA
 
 $(eval $(meson-package))
