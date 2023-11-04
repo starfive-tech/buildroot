@@ -14,6 +14,7 @@ LIBCAMERA_DEPENDENCIES = \
 	host-python3-pyyaml \
 	host-python-jinja2 \
 	host-python-ply \
+	host-patchelf \
 	libyaml \
 	gnutls
 LIBCAMERA_CONF_OPTS = \
@@ -156,11 +157,16 @@ endef
 LIBCAMERA_POST_INSTALL_STAGING_HOOKS += LIBCAMERA_INSTALL_STAGING_REPLACE_STARFIVE_IPA
 
 ## replace with the starfive full feature ipa library which is closed source when post install to target
+## consider the support/scripts/fix-rpath will always change the rpath in library when make rootfs, so try to run it before sign
 define LIBCAMERA_TARGET_INSTALL_REPLACE_STARFIVE_IPA
 	@echo "LIBCAMERA_POST_INSTALL_TARGET_HOOKS !!!!"
 	$(if $(wildcard $(@D)/starfive_post_script/replace_and_sign_ipa_starfive_lib.sh),
 		$(@D)/starfive_post_script/replace_and_sign_ipa_starfive_lib.sh $(TARGET_DIR)/usr/lib/libcamera; \
 		$(@D)/starfive_post_script/replace_and_sign_ipa_starfive_lib.sh)
+	PER_PACKAGE_DIR=$(PER_PACKAGE_DIR) $(TOPDIR)/support/scripts/fix-rpath target
+	$(@D)/src/ipa/ipa-sign-install.sh $(@D)/build/src/ipa-priv-key.pem $(TARGET_DIR)/usr/lib/libcamera/ipa_starfive.so
+	@echo "$(@D)/src/ipa/ipa-sign-install.sh $(@D)/build/src/ipa-priv-key.pem $(TARGET_DIR)/usr/lib/libcamera/ipa_starfive.so"
+
 endef
 LIBCAMERA_POST_INSTALL_TARGET_HOOKS += LIBCAMERA_TARGET_INSTALL_REPLACE_STARFIVE_IPA
 
