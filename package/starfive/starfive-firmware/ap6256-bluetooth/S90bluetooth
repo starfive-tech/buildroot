@@ -17,7 +17,7 @@ case "$1" in
 	echo 1 > /sys/class/gpio/gpio52/value
 
 	start-stop-daemon -S -b -x $NAME
-	brcm_patchram_plus --enable_hci --no2bytes --tosleep 200000 --baudrate 115200 --patchram /lib/firmware/BCM4345C5.hcd /dev/ttyS1 &
+	brcm_patchram_plus --enable_hci --no2bytes --tosleep 200000 --baudrate 1500000 --patchram /lib/firmware/BCM4345C5.hcd /dev/ttyS1 &
 	echo "OK"
 	;;
   stop)
