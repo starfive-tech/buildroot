@@ -1,9 +1,11 @@
-From 687ce90d3cccfef1ef6207e4856212d244fddabc Mon Sep 17 00:00:00 2001
+From 1ef1752d44921737247635ba028821332d053aef Mon Sep 17 00:00:00 2001
 From: "zejian.su" <zejian.su@starfivetech.com>
-Date: Thu, 12 Oct 2023 13:59:07 +0800
-Subject: [PATCH 4/4] Make libcamera-vid run normally
+Date: Mon, 6 Nov 2023 13:43:41 +0800
+Subject: [PATCH] Make libcamera-vid run normally
 
 ---
+ core/libcamera_encoder.hpp                 |    1 +
+ core/video_options.hpp                     |   20 +-
  encoder/CMakeLists.txt                     |    7 +-
  encoder/encoder.cpp                        |    6 +-
  encoder/h265_encoder.cpp                   |  422 ++++++
@@ -26,7 +28,7 @@ Subject: [PATCH 4/4] Make libcamera-vid run normally
  encoder/mjpeg_encoder.cpp                  |   19 +-
  encoder/yuv420_encoder.cpp                 |   80 ++
  encoder/yuv420_encoder.hpp                 |   41 +
- 22 files changed, 8287 insertions(+), 4 deletions(-)
+ 24 files changed, 8296 insertions(+), 16 deletions(-)
  create mode 100755 encoder/h265_encoder.cpp
  create mode 100755 encoder/h265_encoder.hpp
  create mode 100755 encoder/include/khronos/OMX_Audio.h
@@ -47,6 +49,63 @@ Subject: [PATCH 4/4] Make libcamera-vid run normally
  create mode 100755 encoder/yuv420_encoder.cpp
  create mode 100755 encoder/yuv420_encoder.hpp
 
+diff --git a/core/libcamera_encoder.hpp b/core/libcamera_encoder.hpp
+index 892b153..293cc58 100644
+--- a/core/libcamera_encoder.hpp
++++ b/core/libcamera_encoder.hpp
+@@ -16,6 +16,7 @@
+ typedef std::function<void(void *, size_t, int64_t, bool)> EncodeOutputReadyCallback;
+ typedef std::function<void(libcamera::ControlList &)> MetadataReadyCallback;
+ 
++
+ class LibcameraEncoder : public LibcameraApp
+ {
+ public:
+diff --git a/core/video_options.hpp b/core/video_options.hpp
+index 395d0a8..b3f9469 100644
+--- a/core/video_options.hpp
++++ b/core/video_options.hpp
+@@ -23,17 +23,13 @@ struct VideoOptions : public Options
+ 		// clang-format off
+ 		options_.add_options()
+ 			("bitrate,b", value<uint32_t>(&bitrate)->default_value(0),
+-			 "Set the video bitrate for encoding, in bits/second (h264 only)")
+-			("profile", value<std::string>(&profile),
+-			 "Set the encoding profile (h264 only)")
+-			("level", value<std::string>(&level),
+-			 "Set the encoding level (h264 only)")
++			 "Set the video bitrate for encoding, in bits/second (h265 only)")
+ 			("intra,g", value<unsigned int>(&intra)->default_value(0),
+-			 "Set the intra frame period (h264 only)")
++			 "Set the intra frame period (h265 only)")
+ 			("inline", value<bool>(&inline_headers)->default_value(false)->implicit_value(true),
+-			 "Force PPS/SPS header with every I frame (h264 only)")
+-			("codec", value<std::string>(&codec)->default_value("h264"),
+-			 "Set the codec to use, either h264, "
++			 "Force PPS/SPS header with every I frame (h265 only)")
++			("codec", value<std::string>(&codec)->default_value("h265"),
++			 "Set the codec to use, either h265, "
+ #if LIBAV_PRESENT
+ 			  "libav, "
+ #endif
+@@ -123,14 +119,14 @@ struct VideoOptions : public Options
+ 			width = 640;
+ 		if (height == 0)
+ 			height = 480;
+-		if (strcasecmp(codec.c_str(), "h264") == 0)
+-			codec = "h264";
+-		else if (strcasecmp(codec.c_str(), "libav") == 0)
++		if (strcasecmp(codec.c_str(), "libav") == 0)
+ 			codec = "libav";
+ 		else if (strcasecmp(codec.c_str(), "yuv420") == 0)
+ 			codec = "yuv420";
+ 		else if (strcasecmp(codec.c_str(), "mjpeg") == 0)
+ 			codec = "mjpeg";
++		else if (strcasecmp(codec.c_str(), "h265") == 0)
++			codec = "h265";
+ 		else
+ 			throw std::runtime_error("unrecognised codec " + codec);
+ 		if (strcasecmp(initial.c_str(), "pause") == 0)
 diff --git a/encoder/CMakeLists.txt b/encoder/CMakeLists.txt
 index a426a45..4f36270 100644
 --- a/encoder/CMakeLists.txt
