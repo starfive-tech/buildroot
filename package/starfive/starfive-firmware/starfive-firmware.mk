@@ -10,7 +10,7 @@ ifeq ($(BR2_PACKAGE_STARFIVE_FIRMWARE_AP6256_BLUETOOTH),y)
 define STARFIVE_FIRMWARE_INSTALL_AP6256_BLUETOOTH
 	@echo "install AP6256 BLUETOOTH firmware ..."
 	$(INSTALL) -m 0755 -D $(STARFIVE_FIRMWARE_PKGDIR)/ap6256-bluetooth/BCM4345C5.hcd $(TARGET_DIR)/lib/firmware/
-	$(INSTALL) -m 0755 -D $(STARFIVE_FIRMWARE_PKGDIR)/ap6256-bluetooth/S90bluetooth $(TARGET_DIR)/etc/init.d/
+	$(INSTALL) -m 0755 -D $(STARFIVE_FIRMWARE_PKGDIR)/ap6256-bluetooth/S36ap6256-bluetooth $(TARGET_DIR)/etc/init.d/
 endef
 endif
 
