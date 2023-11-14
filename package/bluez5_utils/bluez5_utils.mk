@@ -31,10 +31,6 @@ BLUEZ5_UTILS_CONF_OPTS += --disable-obex
 endif
 
 ifeq ($(BR2_PACKAGE_BLUEZ5_UTILS_CLIENT),y)
-define BLUEZ5_UTILS_INSTALL_BTD
-	$(INSTALL) -D -m 0755 $(@D)/src/bluetoothd $(TARGET_DIR)/usr/bin/bluetoothd
-endef
-BLUEZ5_UTILS_POST_INSTALL_TARGET_HOOKS += BLUEZ5_UTILS_INSTALL_BTD
 BLUEZ5_UTILS_CONF_OPTS += --enable-client
 BLUEZ5_UTILS_DEPENDENCIES += readline
 else
@@ -136,5 +132,10 @@ BLUEZ5_UTILS_DEPENDENCIES += systemd
 else
 BLUEZ5_UTILS_CONF_OPTS += --disable-systemd
 endif
+
+define BLUEZ5_UTILS_INSTALL_INIT_SYSV
+	$(INSTALL) -m 0755 -D package/bluez5_utils/S40bluetooth \
+		$(TARGET_DIR)/etc/init.d/S40bluetooth
+endef
 
 $(eval $(autotools-package))
