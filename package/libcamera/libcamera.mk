@@ -4,7 +4,7 @@
 #
 ################################################################################
 
-LIBCAMERA_VERSION = 8e8657042c06d0fc6c90e4031cfb93251ec9d5d2
+LIBCAMERA_VERSION = 9b28cffeba4698ce65c288146fa79cf748f0b609
 LIBCAMERA_SITE = https://github.com/starfive-tech/libcamera
 LIBCAMERA_SITE_METHOD = git
 
@@ -142,8 +142,8 @@ endef
 ## replace with the starfive full feature ipa library which is closed source when post build
 define LIBCAMERA_BUILD_REPLACE_STARFIVE_IPA
 	@echo "LIBCAMERA_POST_BUILD_HOOKS !!!!"
-	$(if $(wildcard $(@D)/starfive_post_script/replace_and_sign_ipa_starfive_lib.sh),
-		$(@D)/starfive_post_script/replace_and_sign_ipa_starfive_lib.sh)
+	$(if $(wildcard $(@D)/starfive_post_script/replace_algorithm_lib.sh),
+		$(@D)/starfive_post_script/replace_algorithm_lib.sh)
 endef
 LIBCAMERA_POST_BUILD_HOOKS += LIBCAMERA_BUILD_REPLACE_STARFIVE_IPA
 
@@ -151,8 +151,8 @@ LIBCAMERA_POST_BUILD_HOOKS += LIBCAMERA_BUILD_REPLACE_STARFIVE_IPA
 ## replace with the starfive full feature ipa library which is closed source when post install to stage
 define LIBCAMERA_INSTALL_STAGING_REPLACE_STARFIVE_IPA
 	@echo "LIBCAMERA_POST_INSTALL_STAGING_HOOKS !!!!"
-	$(if $(wildcard $(@D)/starfive_post_script/replace_and_sign_ipa_starfive_lib.sh),
-		$(@D)/starfive_post_script/replace_and_sign_ipa_starfive_lib.sh $(STAGING_DIR)/usr/lib/libcamera)
+	$(if $(wildcard $(@D)/starfive_post_script/replace_algorithm_lib.sh),
+		$(@D)/starfive_post_script/replace_algorithm_lib.sh $(STAGING_DIR)/usr/lib/)
 endef
 LIBCAMERA_POST_INSTALL_STAGING_HOOKS += LIBCAMERA_INSTALL_STAGING_REPLACE_STARFIVE_IPA
 
@@ -160,13 +160,12 @@ LIBCAMERA_POST_INSTALL_STAGING_HOOKS += LIBCAMERA_INSTALL_STAGING_REPLACE_STARFI
 ## consider the support/scripts/fix-rpath will always change the rpath in library when make rootfs, so try to run it before sign
 define LIBCAMERA_TARGET_INSTALL_REPLACE_STARFIVE_IPA
 	@echo "LIBCAMERA_POST_INSTALL_TARGET_HOOKS !!!!"
-	$(if $(wildcard $(@D)/starfive_post_script/replace_and_sign_ipa_starfive_lib.sh),
-		$(@D)/starfive_post_script/replace_and_sign_ipa_starfive_lib.sh $(TARGET_DIR)/usr/lib/libcamera; \
-		$(@D)/starfive_post_script/replace_and_sign_ipa_starfive_lib.sh)
+	$(if $(wildcard $(@D)/starfive_post_script/replace_algorithm_lib.sh),
+		$(@D)/starfive_post_script/replace_algorithm_lib.sh $(TARGET_DIR)/usr/lib/; \
+		$(@D)/starfive_post_script/replace_algorithm_lib.sh)
 	PER_PACKAGE_DIR=$(PER_PACKAGE_DIR) $(TOPDIR)/support/scripts/fix-rpath target
 	$(@D)/src/ipa/ipa-sign-install.sh $(@D)/build/src/ipa-priv-key.pem $(TARGET_DIR)/usr/lib/libcamera/ipa_starfive.so
 	@echo "$(@D)/src/ipa/ipa-sign-install.sh $(@D)/build/src/ipa-priv-key.pem $(TARGET_DIR)/usr/lib/libcamera/ipa_starfive.so"
-
 endef
 LIBCAMERA_POST_INSTALL_TARGET_HOOKS += LIBCAMERA_TARGET_INSTALL_REPLACE_STARFIVE_IPA
 
