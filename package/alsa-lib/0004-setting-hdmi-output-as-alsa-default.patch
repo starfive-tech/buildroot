@@ -1,0 +1,19 @@
+Setting card:1 device:0 as alsa default config for DevKit.
+
+Signed-off-by: Leo Lu <leo.lu@starfivetech.com>
+
+
+diff -purN a/src/conf/alsa.conf b/src/conf/alsa.conf
+--- a/src/conf/alsa.conf	2021-06-14 18:28:44.000000000 +0800
++++ b/src/conf/alsa.conf	2023-04-20 16:17:08.532675092 +0800
+@@ -102,8 +102,8 @@ defaults.namehint.basic on
+ # show extended name hints
+ defaults.namehint.extended off
+ #
+-defaults.ctl.card 0
+-defaults.pcm.card 0
++defaults.ctl.card 1
++defaults.pcm.card 1
+ defaults.pcm.device 0
+ defaults.pcm.subdevice -1
+ defaults.pcm.nonblock 1

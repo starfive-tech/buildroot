@@ -1,0 +1,46 @@
+# starfive firmware packages
+
+config BR2_PACKAGE_STARFIVE_FIRMWARE
+	bool "starfive-firmware"
+	help
+	  This package provides additional various binary firmware files
+	  based on BR2_PACKAGE_LINUX_FIRMWARE (closed binary blobs) for
+	  such devices like bluetooth, wifi cards etc.
+
+if BR2_PACKAGE_STARFIVE_FIRMWARE
+
+menu "Starfive Bluetooth firmware"
+
+config BR2_PACKAGE_STARFIVE_FIRMWARE_AP6256_BLUETOOTH
+	bool "AP6256 Bluetooth"
+	help
+	  Firmware files for AP6256 Wireless bluetooth support.
+
+config BR2_PACKAGE_STARFIVE_FIRMWARE_RTL8852BU_BLUETOOTH
+        bool "RTL8852BU Bluetooth"
+        help
+          Firmware files for RTL8852BU Wireless bluetooth support.
+
+endmenu # Bluetooth
+
+
+menu "Starfive WiFi firmware"
+
+config BR2_PACKAGE_STARFIVE_FIRMWARE_AP6256_SDIO_WIFI
+	bool "AP6256 SDIO Wifi"
+	help
+	  Firmware files for the AP6256 Wifi module on SDIO.
+
+config BR2_PACKAGE_STARFIVE_FIRMWARE_ECR6600U_USB_WIFI
+	bool "ECR6600U USB Wifi"
+	help
+	  Firmware files for the ECR6600U USB Wifi module.
+
+config BR2_PACKAGE_STARFIVE_FIRMWARE_AIC8800_USB_WIFI
+	bool "AIC8800 and AIC8800DC USB Wifi"
+	help
+	  Firmware files for the AIC8800 and AIC8800DC USB Wifi module.
+
+endmenu # WiFi
+
+endif # BR2_PACKAGE_STARFIVE_FIRMWARE

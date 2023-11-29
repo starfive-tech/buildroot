@@ -1,0 +1,41 @@
+#!/bin/sh
+#
+# This shell script to loading the ap6256 bluetooth firmware
+#   and set gpio52 to reset the bluetooth hardware.
+#
+DESC="loading ap6256 bluetooth firmware and reset bluetooth"
+
+[ -e /lib/firmware/BCM4345C5.hcd ] || exit
+
+case "$1" in
+  start)
+	echo "Starting $DESC: "
+	echo 52 > /sys/class/gpio/export
+	echo out > /sys/class/gpio/gpio52/direction
+
+	echo 0 > /sys/class/gpio/gpio52/value
+	sleep 1
+	echo 1 > /sys/class/gpio/gpio52/value
+
+	brcm_patchram_plus --enable_hci --no2bytes --tosleep 200000 --baudrate 1500000 --patchram /lib/firmware/BCM4345C5.hcd /dev/ttyS1 &
+	;;
+  stop)
+	echo "Stopping $DESC: "
+	echo 0 > /sys/class/gpio/gpio52/value
+	echo 52 > /sys/class/gpio/unexport
+	killall brcm_patchram_plus
+	;;
+  restart|force-reload)
+	echo "Restarting $DESC: "
+	$0 stop
+	sleep 1
+	$0 start
+	;;
+
+  *)
+	echo "Usage: $0 {start|stop|restart|force-reload}" >&2
+	exit 1
+	;;
+esac
+
+exit 0
