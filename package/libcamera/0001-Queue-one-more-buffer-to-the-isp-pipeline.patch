@@ -1,0 +1,38 @@
+From 06f16b0b104d7a00a9d44a3fdef434db7e9a3c08 Mon Sep 17 00:00:00 2001
+From: "zejian.su" <zejian.su@starfivetech.com>
+Date: Tue, 5 Dec 2023 16:43:06 +0800
+Subject: [PATCH] Queue one more buffer to the isp pipeline.
+
+If need n frames from the starfive isp pipeline, it need to queue n+1 buffer to it.
+So one more buffer should be fed to the pipeline.
+
+Signed-off-by: zejian.su <zejian.su@starfivetech.com>
+---
+ src/apps/cam/camera_session.cpp | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/apps/cam/camera_session.cpp b/src/apps/cam/camera_session.cpp
+index 8fcec630..a730570b 100644
+--- a/src/apps/cam/camera_session.cpp
++++ b/src/apps/cam/camera_session.cpp
+@@ -339,7 +339,7 @@ int CameraSession::startCapture()
+ 
+ int CameraSession::queueRequest(Request *request)
+ {
+-	if (captureLimit_ && queueCount_ >= captureLimit_)
++	if (captureLimit_ && queueCount_ > captureLimit_)
+ 		return 0;
+ 
+ 	if (script_)
+@@ -371,7 +371,7 @@ void CameraSession::processRequest(Request *request)
+ 	 * capture limit is reached and we don't want to emit the signal every
+ 	 * single time.
+ 	 */
+-	if (captureLimit_ && captureCount_ >= captureLimit_)
++	if (captureLimit_ && captureCount_ > captureLimit_)
+ 		return;
+ 
+ 	const Request::BufferMap &buffers = request->buffers();
+-- 
+2.34.1
+
