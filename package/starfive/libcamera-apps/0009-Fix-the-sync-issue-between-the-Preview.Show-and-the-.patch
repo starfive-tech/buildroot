@@ -1,0 +1,291 @@
+From e9e9555cac3c11c70277824d82d5b3fbd5e4afd2 Mon Sep 17 00:00:00 2001
+From: "zejian.su" <zejian.su@starfivetech.com>
+Date: Fri, 1 Dec 2023 16:30:27 +0800
+Subject: [PATCH 2/2] Fix the sync issue between the Preview.Show() and the
+ QWidget.update() 1. Add a mutex between the Preview.Show() and the
+ QWidget.update(). 2. Speed up the Preview.Show() -- change the floating point
+ to integer, 	merge some plus and multiplying operation and remove some data
+ copy.
+
+Signed-off-by: zejian.su <zejian.su@starfivetech.com>
+---
+ preview/qt_preview.cpp | 183 +++++++++++++++++++++++++----------------
+ 1 file changed, 113 insertions(+), 70 deletions(-)
+
+diff --git a/preview/qt_preview.cpp b/preview/qt_preview.cpp
+index 8196a8e..ef3c8a4 100644
+--- a/preview/qt_preview.cpp
++++ b/preview/qt_preview.cpp
+@@ -41,16 +41,47 @@ class MyWidget : public QWidget
+ public:
+ 	MyWidget(QWidget *parent, int w, int h) : QWidget(parent), size(w, h)
+ 	{
+-		image = QImage(size, QImage::Format_RGB888);
+-		image.fill(0);
++		for(int i = 0; i < 2; i++) {
++			buffers_[i].image = QImage(size, QImage::Format_RGB888);
++			buffers_[i].image.fill(0);
++			availableBuffers_.push_back(&buffers_[i]);
++		}
+ 	}
+ 	QSize size;
+-	QImage image;
++
++	struct ImageBuffer {
++		QImage image;
++		uint8_t frameCounter;
++
++		ImageBuffer() : frameCounter(0) {};
++	} buffers_[2];
++
++	std::list<ImageBuffer *> freeBuffers_;
++	std::list<ImageBuffer *> availableBuffers_;
++
++	std::mutex buffers_available_mutex_;
++	std::mutex buffers_free_mutex_;
+ protected:
+ 	void paintEvent(QPaintEvent *) override
+ 	{
+ 		QPainter painter(this);
+-		painter.drawImage(rect(), image, image.rect());
++		{
++			ImageBuffer *buffer = nullptr;
++			{
++			std::lock_guard<std::mutex> lock(buffers_available_mutex_);
++			if(!availableBuffers_.size())
++				return;
++			buffer = availableBuffers_.back();
++			availableBuffers_.pop_back();
++			}
++
++			painter.drawImage(rect(), buffer->image, buffer->image.rect());
++
++			{
++			std::lock_guard<std::mutex> lock(buffers_free_mutex_);
++			freeBuffers_.push_back(buffer);
++			}
++		}
+ 	}
+ 	QSize sizeHint() const override { return size; }
+ };
+@@ -58,7 +89,7 @@ protected:
+ class QtPreview : public Preview
+ {
+ public:
+-	QtPreview(Options const *options) : Preview(options), frame_counter_(0)
++	QtPreview(Options const *options) : Preview(options)
+ 	{
+ 		window_width_ = options->preview_width;
+ 		window_height_ = options->preview_height;
+@@ -67,6 +98,8 @@ public:
+ 		// This preview window is expensive, so make it small by default.
+ 		if (window_width_ == 0 || window_height_ == 0)
+ 			window_width_ = 512, window_height_ = 384;
++		
++		frameCounter_ = 0;
+ 		// As a hint, reserve twice the binned width for our widest current camera (V3)
+ 		tmp_stripe_.reserve(4608);
+ 		thread_ = std::thread(&QtPreview::threadFunc, this, options);
+@@ -83,100 +116,105 @@ public:
+ 	void SetInfoText(const std::string &text) override { main_window_->setWindowTitle(QString::fromStdString(text)); }
+ 	virtual void Show(int fd, libcamera::Span<uint8_t> span, StreamInfo const &info) override
+ 	{
+-		if((frame_counter_++) & 1) {
+-			// Return the buffer to the camera system.
+-			done_callback_(fd);
+-			return;
++		MyWidget::ImageBuffer *buffer = nullptr;
++		{
++		std::lock_guard<std::mutex> lock(pane_->buffers_free_mutex_);
++		if(pane_->freeBuffers_.size() > 0) {
++			buffer = pane_->freeBuffers_.front();
++			pane_->freeBuffers_.pop_front();
++		}
++		}
++
++		if(!buffer) {
++			std::lock_guard<std::mutex> lock(pane_->buffers_available_mutex_);
++			if(!pane_->availableBuffers_.size()) {
++				done_callback_(fd);
++				return;
++			}
++			buffer = pane_->availableBuffers_.front();
++			pane_->availableBuffers_.pop_front();
+ 		}
+-		
+ 		// Quick and simple nearest-neighbour-ish resampling is used here.
+ 		// We further share U,V samples between adjacent output pixel pairs
+ 		// (even when downscaling) to speed up the conversion.
+ 		unsigned x_step = (info.width << 16) / window_width_;
+ 		unsigned y_step = (info.height << 16) / window_height_;
+ 
+-		// Choose the right matrix to convert YUV back to RGB.
+-		static const float YUV2RGB[3][9] = {
+-			{ 1.0,   0.0, 1.402, 1.0,   -0.344, -0.714, 1.0,   1.772, 0.0 }, // JPEG
+-			{ 1.164, 0.0, 1.596, 1.164, -0.392, -0.813, 1.164, 2.017, 0.0 }, // SMPTE170M
+-			{ 1.164, 0.0, 1.793, 1.164, -0.213, -0.533, 1.164, 2.112, 0.0 }, // Rec709
++		static const uint32_t YUV2RGB[3][9] = {
++		{ 128, 0, 179, 128,  44,  91, 128, 227, 0 }, // JPEG
++		{ 149, 0, 204, 149,  50, 104, 149, 258, 0 }, // SMPTE170M
++		{ 149, 0, 230, 149,  27,  68, 149, 270, 0 }, // Rec709
+ 		};
+-		int offsetY;
+-		float coeffY, coeffVR, coeffUG, coeffVG, coeffUB;
+-		if (info.colour_space == libcamera::ColorSpace::Smpte170m)
++		static const int RGBOFFSET[3][3] = {
++			{24960, -15232, 31104}, {28496, -17328, 35408}, {31824, -9776, 36944}
++		};
++
++		uint32_t coeffY, coeffVR, coeffUG, coeffVG, coeffUB;
++		const int * rgbOffset = nullptr;
++		if(info.colour_space == libcamera::ColorSpace::Smpte170m)
+ 		{
+-			offsetY = 16;
+ 			coeffY = YUV2RGB[1][0];
+ 			coeffVR = YUV2RGB[1][2];
+ 			coeffUG = YUV2RGB[1][4];
+ 			coeffVG = YUV2RGB[1][5];
+ 			coeffUB = YUV2RGB[1][7];
+-		}
+-		else if (info.colour_space == libcamera::ColorSpace::Rec709)
++			rgbOffset = RGBOFFSET[1];
++		} else if(info.colour_space == libcamera::ColorSpace::Rec709)
+ 		{
+-			offsetY = 16;
+ 			coeffY = YUV2RGB[2][0];
+ 			coeffVR = YUV2RGB[2][2];
+ 			coeffUG = YUV2RGB[2][4];
+ 			coeffVG = YUV2RGB[2][5];
+ 			coeffUB = YUV2RGB[2][7];
+-		}
+-		else
++			rgbOffset = RGBOFFSET[2];
++		} else
+ 		{
+-			offsetY = 0;
+ 			coeffY = YUV2RGB[0][0];
+ 			coeffVR = YUV2RGB[0][2];
+ 			coeffUG = YUV2RGB[0][4];
+ 			coeffVG = YUV2RGB[0][5];
+ 			coeffUB = YUV2RGB[0][7];
+-			if (info.colour_space != libcamera::ColorSpace::Sycc)
+-				LOG(1, "QtPreview: unexpected colour space " << libcamera::ColorSpace::toString(info.colour_space));
++			rgbOffset = RGBOFFSET[0];
+ 		}
+ 
+-		// Because the source buffer is uncached, and we want to read it a byte at a time,
+-		// take a copy of each row used. This is a speedup provided memcpy() is vectorized.
+-		tmp_stripe_.resize(2 * info.stride);
+-		uint8_t const *Y_start = span.data();
+-		uint8_t const *UV_start = Y_start + info.height * info.stride;
+-		uint8_t *Y_row = &tmp_stripe_[0];
+-		uint8_t *U_row = Y_row + info.stride;
+-		uint8_t *V_row = U_row + (info.stride >> 1);
+-
+-		// Possibly this should be locked in case a repaint is happening? In practice the risk
+-		// is only that there might be some tearing, so I don't think we worry. We could speed
+-		// it up by getting the ISP to supply RGB, but I'm not sure I want to handle that extra
+-		// possibility in our main application code, so we'll put up with the slow conversion.
+-		for (unsigned int y = 0; y < window_height_; y++)
++		uint8_t const * Y_start = span.data();
++		uint8_t const * UV_start = Y_start + info.height * info.stride;
++		int src_ypos = y_step >> 1;
++		uint32_t Y2 = 0;
++		uint32_t U2 = coeffUG | (coeffUB << 16);
++		uint32_t V2 = coeffVR | (coeffVG << 16);
++		uint16_t * y2 = (uint16_t *)&Y2;
++		uint32_t U;
++		uint32_t V;
++		uint16_t * u2 = (uint16_t *)&U;
++		uint16_t * v2 = (uint16_t *)&V;
++
++		for(unsigned int y = 0; y < window_height_; y++, src_ypos += y_step)
+ 		{
+-			unsigned row = (y * y_step) >> 16;
+-			uint8_t *dest = pane_->image.scanLine(y);
+-			unsigned x_pos = x_step >> 1;
+-
+-			memcpy(Y_row, Y_start + row * info.stride, info.stride);
+-			//memcpy(U_row, Y_start + ((4 * info.height + row) >> 1) * (info.stride >> 1), info.stride >> 1);
+-			//memcpy(V_row, Y_start + ((5 * info.height + row) >> 1) * (info.stride >> 1), info.stride >> 1);
+-			uint8_t const *cur_uv = UV_start + (row >> 1) * info.width;
+-			for(unsigned int uv_idx = 0; uv_idx < info.width >> 1; uv_idx++, cur_uv += 2)
+-				U_row[uv_idx] = cur_uv[0], V_row[uv_idx] = cur_uv[1];
+-
+-			for (unsigned int x = 0; x < window_width_; x += 2)
++			const uint8_t * src_y = Y_start + (src_ypos >> 16) * info.width;
++			const uint8_t * src_uv = UV_start + (src_ypos >> 17) * info.width;
++			uint8_t * dest = buffer->image.scanLine(y);
++			uint32_t x_pos = x_step >> 1;
++
++			for(unsigned int x = 0; x < window_width_; x += 2)
+ 			{
+-				int Y0 = Y_row[x_pos >> 16];
++				y2[0] = src_y[x_pos >> 16];
+ 				x_pos += x_step;
+-				int Y1 = Y_row[x_pos >> 16];
+-				int U = U_row[x_pos >> 17];
+-				int V = V_row[x_pos >> 17];
++				y2[1] = src_y[x_pos >> 16];
++				U = src_uv[(x_pos >> 16) & 0xfffffffe];
++				V = src_uv[(x_pos >> 16) | 1];
+ 				x_pos += x_step;
+-				Y0 -= offsetY;
+-				Y1 -= offsetY;
+-				U -= 128;
+-				V -= 128;
+-				int R0 = coeffY * Y0 + coeffVR * V;
+-				int G0 = coeffY * Y0 + coeffUG * U + coeffVG * V;
+-				int B0 = coeffY * Y0 + coeffUB * U;
+-				int R1 = coeffY * Y1 + coeffVR * V;
+-				int G1 = coeffY * Y1 + coeffUG * U + coeffVG * V;
+-				int B1 = coeffY * Y1 + coeffUB * U;
++
++				Y2 *= coeffY;
++				U *= U2;
++				V *= V2;
++
++				int R0 = ((int)y2[0] + (int)v2[0] - rgbOffset[0]) >> 7;
++				int G0 = ((int)y2[0] - (int)u2[0] - (int)v2[1] - rgbOffset[1]) >> 7;
++				int B0 = ((int)y2[0] + (int)u2[1] - rgbOffset[2]) >> 7;
++				int R1 = ((int)y2[1] + (int)v2[0] - rgbOffset[0]) >> 7;
++				int G1 = ((int)y2[1] - (int)u2[0] - (int)v2[1] - rgbOffset[1]) >> 7;
++				int B1 = ((int)y2[1] + (int)u2[1] - rgbOffset[2]) >> 7;
+ 				*(dest++) = std::clamp(R0, 0, 255);
+ 				*(dest++) = std::clamp(G0, 0, 255);
+ 				*(dest++) = std::clamp(B0, 0, 255);
+@@ -186,6 +224,12 @@ public:
+ 			}
+ 		}
+ 
++		{
++		std::lock_guard<std::mutex> lock(pane_->buffers_available_mutex_);
++		buffer->frameCounter = ++frameCounter_;
++		pane_->availableBuffers_.push_back(buffer);
++		}
++
+ 		pane_->update();
+ 
+ 		// Return the buffer to the camera system.
+@@ -193,7 +237,7 @@ public:
+ 	}
+ 	// Reset the preview window, clearing the current buffers and being ready to
+ 	// show new ones.
+-	void Reset() override {frame_counter_ = 0;}
++	void Reset() override {}
+ 	// Check if preview window has been shut down.
+ 	bool Quit() override { return main_window_->quit; }
+ 	// There is no particular limit to image sizes, though large images will be very slow.
+@@ -228,8 +272,7 @@ private:
+ 	std::mutex mutex_;
+ 	std::condition_variable cond_var_;
+ 	std::vector<uint8_t> tmp_stripe_;
+-
+-	unsigned int frame_counter_;
++	uint8_t frameCounter_;
+ };
+ 
+ Preview *make_qt_preview(Options const *options)
+-- 
+2.34.1
+
