@@ -4,7 +4,7 @@
 #
 ################################################################################
 
-LIBCAMERA_VERSION = 6b51f180d9e720a38b1947309c27a01bd048ab5d
+LIBCAMERA_VERSION = 0e986c920e7c4b46d3b7947cb53a2274f1a8bd80
 LIBCAMERA_SITE = https://github.com/starfive-tech/libcamera
 LIBCAMERA_SITE_METHOD = git
 
