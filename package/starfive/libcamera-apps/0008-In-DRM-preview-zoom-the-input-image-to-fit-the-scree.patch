@@ -1,0 +1,300 @@
+From 526cbca855ea6310dc846cc05158d403aea456e1 Mon Sep 17 00:00:00 2001
+From: "zejian.su" <zejian.su@starfivetech.com>
+Date: Mon, 27 Nov 2023 18:02:17 +0800
+Subject: [PATCH 1/2] In DRM preview, zoom the input image to fit the screen.
+
+1. Use the atomic drm mode.
+2. Find a mode in the connector with most closed area with the input image.
+3. Set the plane property to scale the input image.
+
+Signed-off-by: zejian.su <zejian.su@starfivetech.com>
+---
+ preview/drm_preview.cpp | 184 ++++++++++++++++++++++++++++++++--------
+ 1 file changed, 147 insertions(+), 37 deletions(-)
+
+diff --git a/preview/drm_preview.cpp b/preview/drm_preview.cpp
+index 38fc6a2..405bdca 100644
+--- a/preview/drm_preview.cpp
++++ b/preview/drm_preview.cpp
+@@ -17,6 +17,92 @@
+ 
+ #include "preview.hpp"
+ 
++class DRMObject
++{
++public:
++	DRMObject(int drmfd, uint32_t id, uint32_t type) 
++		: id_(id), type_(type){
++		drmModeObjectProperties *properties = drmModeObjectGetProperties(drmfd, id, type);
++		if (!properties)
++			return;
++
++		drmModePropertyPtr property;
++		for (uint32_t i = 0; i < properties->count_props; i++) {
++			property = drmModeGetProperty(drmfd, properties->props[i]);
++			property_[std::string(property->name)] = property->prop_id;
++			drmModeFreeProperty(property);
++		}
++
++		drmModeFreeObjectProperties(properties);
++	}
++
++	uint32_t getID() const {return id_;};
++
++public:
++	std::unordered_map<std::string, uint32_t> property_;
++
++private:
++	uint32_t id_;
++	uint32_t type_;
++};
++
++class AtomicRequest
++{
++public:
++	enum Flags {
++		FlagAllowModeset = (1 << 0),
++		FlagAsync = (1 << 1),
++		FlagTestOnly = (1 << 2),
++	};
++
++	AtomicRequest() : valid_(true) {
++		request_ = drmModeAtomicAlloc();
++		if (!request_)
++			valid_ = false;
++	}
++
++	~AtomicRequest() {
++		if (request_)
++			drmModeAtomicFree(request_);
++	}
++
++	bool isValid() const { return valid_; }
++
++	int addProperty(int drmfd, const DRMObject *object, const std::string &propertyName,
++			uint64_t value) {
++
++		if (!valid_)
++			return -EINVAL;
++		
++		auto it = object->property_.find(propertyName);
++		if(it == object->property_.end())
++			return -EINVAL;
++
++		if(drmModeAtomicAddProperty(request_, object->getID(), it->second, value) < 0) {
++			std::string errMsg = "drmModeAtomicAddProperty() failed -- object: " +
++				std::to_string(object->getID()) + ", property: " + std::to_string(it->second);
++			throw std::runtime_error(errMsg);
++		}
++
++		return 0;
++	}
++	
++	int commit(int drmfd, unsigned int flags = 0) {
++		if(drmModeAtomicCommit(drmfd, request_, flags, NULL) < 0)
++			throw std::runtime_error("drmModeAtomicCommit() failed");
++		return 0;
++	}
++
++private:
++	AtomicRequest(const AtomicRequest &) = delete;
++	AtomicRequest(const AtomicRequest &&) = delete;
++	AtomicRequest &operator=(const AtomicRequest &) = delete;
++	AtomicRequest &operator=(const AtomicRequest &&) = delete;
++
++	bool valid_;
++	drmModeAtomicReq *request_;
++};
++
+ class DrmPreview : public Preview
+ {
+ public:
+@@ -48,6 +134,7 @@ private:
+ 	void makeBuffer(int fd, size_t size, StreamInfo const &info, Buffer &buffer);
+ 	void findCrtc();
+ 	void findPlane();
++	void fitDisplaySize();
+ 	int drmfd_;
+ 	int conId_;
+ 	drmModeConnector *con_;
+@@ -61,11 +148,18 @@ private:
+ 	unsigned int height_;
+ 	unsigned int screen_width_;
+ 	unsigned int screen_height_;
++	unsigned int display_x_;
++	unsigned int display_y_;
++	unsigned int display_w_;
++	unsigned int display_h_;
+ 	std::map<int, Buffer> buffers_; // map the DMABUF's fd to the Buffer
+ 	int last_fd_;
+ 	unsigned int max_image_width_;
+ 	unsigned int max_image_height_;
+ 	bool first_time_;
++
++	std::unique_ptr<DRMObject> connector_;
++	std::unique_ptr<DRMObject> crtc_;
+ };
+ 
+ #define ERRSTR strerror(errno)
+@@ -96,10 +190,6 @@ void DrmPreview::findCrtc()
+ 			if (con->encoder_id)
+ 			{
+ 				enc = drmModeGetEncoder(drmfd_, con->encoder_id);
+-				//if (enc->crtc_id)
+-				//{
+-				//	crtc = drmModeGetCrtc(drmfd_, enc->crtc_id);
+-				//}
+ 			} else
+ 			{
+ 				enc = drmModeGetEncoder(drmfd_, con->encoders[0]);
+@@ -229,6 +319,7 @@ void DrmPreview::findPlane()
+ 			drmModeFreePlane(plane);
+ 			break;
+ 		}
++		planeId_ = planes->planes[0];
+ 	}
+ 	catch (std::exception const &e)
+ 	{
+@@ -265,21 +356,16 @@ DrmPreview::DrmPreview(Options const *options) : Preview(options), last_fd_(-1),
+ 		//out_fourcc_ = DRM_FORMAT_YUV420;
+ 		out_fourcc_ = DRM_FORMAT_NV12;
+ 		findPlane();
++
++		drmSetClientCap(drmfd_, DRM_CLIENT_CAP_ATOMIC, 1);
++		connector_ = std::make_unique<DRMObject>(drmfd_, conId_, DRM_MODE_OBJECT_CONNECTOR);
++		crtc_ = std::make_unique<DRMObject>(drmfd_, crtcId_, DRM_MODE_OBJECT_CRTC);
+ 	}
+ 	catch (std::exception const &e)
+ 	{
+ 		close(drmfd_);
+ 		throw;
+ 	}
+-
+-	// Default behaviour here is to go fullscreen.
+-	if (options_->fullscreen || width_ == 0 || height_ == 0 || x_ + width_ > screen_width_ ||
+-		y_ + height_ > screen_height_)
+-	{
+-		x_ = y_ = 0;
+-		width_ = screen_width_;
+-		height_ = screen_height_;
+-	}
+ }
+ 
+ DrmPreview::~DrmPreview()
+@@ -365,9 +451,23 @@ static void setup_colour_space(int fd, int plane_id, std::optional<libcamera::Co
+ 	drm_set_property(fd, plane_id, "COLOR_RANGE", range);
+ }
+ 
++void DrmPreview::fitDisplaySize()
++{
++	if((int64_t)width_ * screen_height_ > (int64_t)screen_width_ * height_) {
++		display_x_ = 0, display_w_ = screen_width_;
++		display_h_ = ((int64_t)screen_width_ * height_) / (int64_t)width_;
++		display_y_ = (screen_height_ - display_h_) >> 1;
++	} else {
++		display_y_ = 0, display_h_ = screen_height_;
++		display_w_ = ((int64_t)width_ * screen_height_) / (int64_t)height_;
++		display_x_ = (screen_width_ - display_w_) >> 1;
++	}
++}
++
+ void DrmPreview::makeBuffer(int fd, size_t size, StreamInfo const &info, Buffer &buffer)
+ {
+ 	unsigned int width = info.width, height = info.height, stride = info.stride;
++	int64_t targetArea = 0;
+ 	if (first_time_)
+ 	{
+ 		first_time_ = false;
+@@ -379,6 +479,10 @@ void DrmPreview::makeBuffer(int fd, size_t size, StreamInfo const &info, Buffer
+ 	buffer.size = size;
+ 	buffer.info = info;
+ 
++	if(!width_ || !height)
++		width_ = info.width, height_ = info.height;
++	targetArea = (int64_t)width_ * height_;
++
+ 	if (drmPrimeFDToHandle(drmfd_, fd, &buffer.bo_handle))
+ 		throw std::runtime_error("drmPrimeFDToHandle failed for fd " + std::to_string(fd));
+ 
+@@ -401,33 +505,46 @@ void DrmPreview::makeBuffer(int fd, size_t size, StreamInfo const &info, Buffer
+ 
+ 	/* find preferred mode */
+ 	drmModeModeInfo *modeptr = NULL, *preferred = NULL;
++	int64_t minDiff = -1;
+ 	for (int m = 0; m < con_->count_modes; m++) {
++		int64_t area, areaDiff;
+ 		modeptr = &con_->modes[m];
+-		if (modeptr->hdisplay == width && modeptr->vdisplay == height) {
++
++		area = (int64_t)modeptr->hdisplay * modeptr->vdisplay;
++		areaDiff = abs(targetArea - area);
++		if(-1 == minDiff)
++			minDiff = abs(targetArea - area), preferred = modeptr;
++		else {
++			if(areaDiff < minDiff)
++				minDiff = areaDiff, preferred = modeptr;
++		}
++
++		if (!minDiff) {
+ 			preferred = modeptr;
+ 			std::cout << "find the matched mode, modes index= "
+ 				<< m << ", " << width << "x" << height << std::endl;
+ 			break;
+ 		}
+-		if (modeptr->type & DRM_MODE_TYPE_PREFERRED) {
+-			preferred = modeptr;
+-			std::cout << "find perferred mode, modes index= " << m << std::endl;
+-		}
+-	}
+-
+-	if (!preferred)
+-		preferred = &con_->modes[0];
+-
+-	// set default
+-	if (drmModeSetCrtc(drmfd_, crtcId_, buffer.fb_handle, 0, 0,
+-	        (uint32_t *)&conId_, 1, preferred)) {
+-		throw std::runtime_error("drmModeSetCrtc() failed");
+ 	}
+ 
+ 	screen_width_ = preferred->hdisplay;
+ 	screen_height_ = preferred->vdisplay;
+-	width_ = width;
+-	height_ = height;
++	fitDisplaySize();
++
++	AtomicRequest ar;
++	uint32_t blob_id;
++
++	drmModeCreatePropertyBlob(drmfd_, preferred, sizeof(con_->modes[0]), &blob_id);
++	ar.addProperty(drmfd_, connector_.get(), "CRTC_ID", crtcId_);
++	ar.addProperty(drmfd_, crtc_.get(), "ACTIVE", 1);
++	ar.addProperty(drmfd_, crtc_.get(), "MODE_ID", blob_id);
++	ar.commit(drmfd_, DRM_MODE_PAGE_FLIP_EVENT | DRM_MODE_ATOMIC_NONBLOCK | DRM_MODE_ATOMIC_ALLOW_MODESET);
++
++	// set default
++	//if (drmModeSetCrtc(drmfd_, crtcId_, buffer.fb_handle, 0, 0,
++	//        (uint32_t *)&conId_, 1, preferred)) {
++	//	throw std::runtime_error("drmModeSetCrtc() failed");
++	//}
+ }
+ 
+ void DrmPreview::Show(int fd, libcamera::Span<uint8_t> span, StreamInfo const &info)
+@@ -436,14 +553,7 @@ void DrmPreview::Show(int fd, libcamera::Span<uint8_t> span, StreamInfo const &i
+ 	if (buffer.fd == -1)
+ 		makeBuffer(fd, span.size(), info, buffer);
+ 
+-	unsigned int x_off = 0, y_off = 0;
+-	unsigned int w = width_, h = height_;
+-	if (info.width * height_ > width_ * info.height)
+-		h = width_ * info.height / info.width, y_off = (height_ - h) / 2;
+-	else
+-		w = height_ * info.width / info.height, x_off = (width_ - w) / 2;
+-
+-	if (drmModeSetPlane(drmfd_, planeId_, crtcId_, buffer.fb_handle, 0, x_off + x_, y_off + y_, w, h, 0, 0,
++	if (drmModeSetPlane(drmfd_, planeId_, crtcId_, buffer.fb_handle, 0, display_x_, display_y_, display_w_, display_h_, 0, 0,
+ 						buffer.info.width << 16, buffer.info.height << 16))
+ 		throw std::runtime_error("drmModeSetPlane failed: " + std::string(ERRSTR));
+ 	if (last_fd_ >= 0)
+-- 
+2.34.1
+
