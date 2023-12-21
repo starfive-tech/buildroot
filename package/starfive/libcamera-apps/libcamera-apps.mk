@@ -4,8 +4,8 @@
 #
 ################################################################################
 
-LIBCAMERA_APPS_SITE = https://github.com/raspberrypi/libcamera-apps.git
-LIBCAMERA_APPS_VERSION = 54a781dffdd101954dcfa6acd0bd80006f67da83
+LIBCAMERA_APPS_SITE = https://github.com/starfive-tech/libcamera-apps.git
+LIBCAMERA_APPS_VERSION = 31377be38defcfbd6bc70bd12895c6f145fc8171
 LIBCAMERA_APPS_SITE_METHOD = git
 LIBCAMERA_APPS_INSTALL_STAGING = YES
 
