@@ -138,4 +138,11 @@ define BLUEZ5_UTILS_INSTALL_INIT_SYSV
 		$(TARGET_DIR)/etc/init.d/S40bluetooth
 endef
 
+ifeq ($(BR2_PACKAGE_BLUEZ5_UTILS_OBEX),y)
+define BLUEZ5_UTILS_INSTALL_TOOLS
+	$(INSTALL) -m 0755 $(@D)/tools/obexctl $(TARGET_DIR)/usr/bin/obexctl
+endef
+endif
+BLUEZ5_UTILS_POST_INSTALL_TARGET_HOOKS += BLUEZ5_UTILS_INSTALL_TOOLS
+
 $(eval $(autotools-package))
