@@ -20,6 +20,7 @@ endef
 define WAVE511_INSTALL_TARGET_CMDS
 	$(INSTALL) -D -m 0644 $(@D)/libsfdec.so $(TARGET_DIR)/usr/lib/libsfdec.so
 	$(INSTALL) -D -m 0644 $(WAVE511_SITE)/../firmware/chagall.bin $(TARGET_DIR)/lib/firmware/chagall.bin
+	$(INSTALL) -D -m 0644 package/starfive/wave511/wave511_dec_fw.bin $(TARGET_DIR)/lib/firmware/wave511_dec_fw.bin
 endef
 
 define WAVE511_INSTALL_STAGING_CMDS
