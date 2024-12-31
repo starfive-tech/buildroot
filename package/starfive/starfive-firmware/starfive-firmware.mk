@@ -27,8 +27,9 @@ endif
 ifeq ($(BR2_PACKAGE_STARFIVE_FIRMWARE_RTL8852BU_BLUETOOTH),y)
 define STARFIVE_FIRMWARE_INSTALL_RTL8852BU
 	@echo "install RTL8852BU bluetooth firmware ..."
-	$(INSTALL) -m 0755 -D $(STARFIVE_FIRMWARE_PKGDIR)/rtl8852bu-bluetooth/rtl8852bu_config $(TARGET_DIR)/lib/firmware/
-	$(INSTALL) -m 0755 -D $(STARFIVE_FIRMWARE_PKGDIR)/rtl8852bu-bluetooth/rtl8852bu_fw $(TARGET_DIR)/lib/firmware/
+	$(INSTALL) -m 0755 -d $(TARGET_DIR)/lib/firmware/rtl_bt
+	$(INSTALL) -m 0755 -D $(STARFIVE_FIRMWARE_PKGDIR)/rtl8852bu-bluetooth/rtl8852bu_config $(TARGET_DIR)/lib/firmware/rtl_bt/rtl8852bu_config.bin
+	$(INSTALL) -m 0755 -D $(STARFIVE_FIRMWARE_PKGDIR)/rtl8852bu-bluetooth/rtl8852bu_fw $(TARGET_DIR)/lib/firmware/rtl_bt/rtl8852bu_fw.bin
 endef
 endif
 
