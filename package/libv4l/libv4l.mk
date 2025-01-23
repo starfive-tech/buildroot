@@ -1,74 +1,23 @@
-################################################################################
-#
-# libv4l
-#
-################################################################################
+KERNEL_MAKEFILE_PATH := ../linux/Makefile
 
-LIBV4L_VERSION = 1.28.1
-LIBV4L_SOURCE = v4l-utils-$(LIBV4L_VERSION).tar.xz
-LIBV4L_SITE = https://linuxtv.org/downloads/v4l-utils
-LIBV4L_INSTALL_STAGING = YES
-LIBV4L_DEPENDENCIES = host-pkgconf
-LIBV4L_CONF_OPTS = -Ddoxygen-doc=disabled -Dqvidcap=disabled -Dv4l2-tracer=disabled
-LIBV4L_LDFLAGS = $(TARGET_LDFLAGS)
+K_VERSION := 5
+K_PATCHLEVEL := 15
+K_SUBLEVEL := 0
 
-# v4l-utils components have different licences, see v4l-utils.spec for details
-LIBV4L_LICENSE = GPL-2.0+ (utilities), LGPL-2.1+ (libraries)
-LIBV4L_LICENSE_FILES = COPYING COPYING.libv4l lib/libv4l1/libv4l1-kernelcode-license.txt
-
-ifeq ($(BR2_PACKAGE_ALSA_LIB),y)
-LIBV4L_DEPENDENCIES += alsa-lib
+ifneq ($(wildcard $(KERNEL_MAKEFILE_PATH)),)
+K_VERSION = $(shell grep '^VERSION' ../linux/Makefile | awk '{print $$3}')
+K_PATCHLEVEL = $(shell grep '^PATCHLEVEL' ../linux/Makefile | awk '{print $$3}')
+K_SUBLEVEL = $(shell grep '^SUBLEVEL' ../linux/Makefile | awk '{print $$3}')
 endif
 
-ifeq ($(BR2_PACKAGE_ARGP_STANDALONE),y)
-LIBV4L_DEPENDENCIES += argp-standalone $(TARGET_NLS_DEPENDENCIES)
-LIBV4L_LDFLAGS += $(TARGET_NLS_LIBS)
-endif
 
-LIBV4L_DEPENDENCIES += $(if $(BR2_PACKAGE_LIBICONV),libiconv)
-
-ifeq ($(BR2_PACKAGE_JPEG),y)
-LIBV4L_CONF_OPTS += -Djpeg=enabled
-LIBV4L_DEPENDENCIES += jpeg
+#if kernel version > 6.6.20, use new version of libv4l
+ifeq ($(shell if ([ $(K_VERSION) -gt 6 ]) || \
+	([ $(K_VERSION) -eq 6 ] && [ $(K_PATCHLEVEL) -gt 6 ]) || \
+	([ $(K_VERSION) -eq 6 ] && [ $(K_PATCHLEVEL) -eq 6 ] && [ $(K_SUBLEVEL) -ge 20 ]); \
+	then echo true; else echo false; fi) , true)
+include package/libv4l/libv4l-1.28.1.mak
 else
-LIBV4L_CONF_OPTS += -Djpeg=disabled
+include package/libv4l/libv4l-1.24.1.mak
 endif
 
-ifeq ($(BR2_PACKAGE_HAS_LIBGL),y)
-LIBV4L_DEPENDENCIES += libgl
-endif
-
-ifeq ($(BR2_PACKAGE_HAS_UDEV),y)
-LIBV4L_CONF_OPTS += -Dlibdvbv5=enabled -Dudevdir=/usr/lib/udev
-LIBV4L_DEPENDENCIES += udev
-else
-LIBV4L_CONF_OPTS += -Dlibdvbv5=disabled
-endif
-
-ifeq ($(BR2_PACKAGE_LIBGLU),y)
-LIBV4L_DEPENDENCIES += libglu
-endif
-
-ifeq ($(BR2_PACKAGE_LIBV4L_UTILS),y)
-LIBV4L_CONF_OPTS += -Dv4l-utils=true
-LIBV4L_DEPENDENCIES += $(TARGET_NLS_DEPENDENCIES)
-
-# IR BPF decoder support needs toolchain with linux-headers >= 3.18
-# libelf and clang support
-LIBV4L_CONF_OPTS += -Dbpf=disabled
-
-ifeq ($(BR2_PACKAGE_QT5BASE)$(BR2_PACKAGE_QT5BASE_GUI)$(BR2_PACKAGE_QT5BASE_WIDGETS),yyy)
-LIBV4L_CONF_OPTS += -Dqv4l2=enabled
-LIBV4L_DEPENDENCIES += qt5base
-else
-LIBV4L_CONF_OPTS += -Dqv4l2=disabled
-endif
-else
-LIBV4L_CONF_OPTS += -Dv4l-utils=false
-endif
-
-ifeq ($(BR2_PACKAGE_SDL2_IMAGE),y)
-LIBV4L_DEPENDENCIES += sdl2_image
-endif
-
-$(eval $(meson-package))
