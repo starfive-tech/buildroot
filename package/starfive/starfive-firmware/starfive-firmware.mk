@@ -51,6 +51,15 @@ define STARFIVE_FIRMWARE_INSTALL_AIC8800
 endef
 endif
 
+# AIC8800D80 SDIO WiFi
+ifeq ($(BR2_PACKAGE_STARFIVE_FIRMWARE_AIC8800_SDIO_WIFI),y)
+define STARFIVE_FIRMWARE_INSTALL_AIC8800
+    @echo "install AIC8800 firmware ..."
+    $(INSTALL) -m 0755 -d $(TARGET_DIR)/lib/firmware/aic8800_sdio
+    $(INSTALL) -m 0644 -t $(TARGET_DIR)/lib/firmware/aic8800_sdio $(STARFIVE_FIRMWARE_PKGDIR)/aic8800-sdio-wifi/aic8800D80/*
+endef
+endif
+
 # install more firmware here
 define STARFIVE_FIRMWARE_INSTALL_TARGET_CMDS
 	mkdir -p $(TARGET_DIR)/lib/firmware
