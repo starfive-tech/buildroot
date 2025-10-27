@@ -1,0 +1,65 @@
+#!/bin/sh
+#
+# This shell script to loading the starfive IPI and RPMSG kernel modules
+#   for inter-processor communication support.
+#
+DESC="loading starfive IPI and RPMSG modules"
+
+[ -e /lib/modules/starfive_ipi_mailbox.ko ] || exit
+[ -e /lib/modules/starfive_rpmsg.ko ] || exit
+
+case "$1" in
+  start)
+	echo "Starting $DESC: "
+	
+	# Load starfive_ipi_mailbox.ko module
+	if ! lsmod | grep -q starfive_ipi_mailbox; then
+		echo "Loading starfive_ipi_mailbox module..."
+		insmod /lib/modules/starfive_ipi_mailbox.ko
+		if [ $? -eq 0 ]; then
+			echo "starfive_ipi_mailbox module loaded successfully"
+		else
+			echo "Failed to load starfive_ipi_mailbox module"
+		fi
+	fi
+	
+	# Load starfive_rpmsg.ko module
+	if ! lsmod | grep -q starfive_rpmsg; then
+		echo "Loading starfive_rpmsg module..."
+		insmod /lib/modules/starfive_rpmsg.ko
+		if [ $? -eq 0 ]; then
+			echo "starfive_rpmsg module loaded successfully"
+		else
+			echo "Failed to load starfive_rpmsg module"
+		fi
+	fi
+	;;
+  stop)
+	echo "Stopping $DESC: "
+	
+	# Unload starfive_rpmsg.ko module
+	if lsmod | grep -q starfive_rpmsg; then
+		echo "Unloading starfive_rpmsg module..."
+		rmmod starfive_rpmsg
+	fi
+	
+	# Unload starfive_ipi_mailbox.ko module
+	if lsmod | grep -q starfive_ipi_mailbox; then
+		echo "Unloading starfive_ipi_mailbox module..."
+		rmmod starfive_ipi_mailbox
+	fi
+	;;
+  restart|force-reload)
+	echo "Restarting $DESC: "
+	$0 stop
+	sleep 1
+	$0 start
+	;;
+
+  *)
+	echo "Usage: $0 {start|stop|restart|force-reload}" >&2
+	exit 1
+	;;
+esac
+
+exit 0

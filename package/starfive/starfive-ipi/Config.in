@@ -1,0 +1,7 @@
+# starfive-ipi package
+
+config BR2_PACKAGE_STARFIVE_IPI
+    bool "starfive-ipi"
+    help
+      This package provides StarFive IPI (Inter-Processor Interrupt)
+      and RPMSG kernel modules for inter-processor communication.
